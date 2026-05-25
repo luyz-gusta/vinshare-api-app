@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+
+    <!--
+      Padrão de masking aplicado em logs HUMAN e JSON.
+      Cobre CPF formatado (123.456.789-00), tokens Bearer e JWT (eyJ...).
+      Cyber, frente 5: nunca persistir dados sensíveis em log.
+    -->
+    <property name="MASK_REGEX" value="(\d{3}\.\d{3}\.\d{3}-\d{2})|(Bearer\s+[A-Za-z0-9._\-]+)|(eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+)"/>
+
+    <!-- Console em formato JSON estruturado (sem dados sensíveis) -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"app":"${appName}"}</customFields>
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <includeMdcKeyName>requestPath</includeMdcKeyName>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <level>level</level>
+                <thread>thread</thread>
+                <logger>logger</logger>
+                <message>message</message>
+            </fieldNames>
+            <!--
+              Masking aplicado pelo logstash-logback-encoder:
+                - <path> mascara o valor inteiro dos campos sensíveis quando aparecem como propriedade JSON
+                - <value> mascara qualquer ocorrência das regex acima em qualquer valor de string
+            -->
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <defaultMask>****</defaultMask>
+                <path>/password</path>
+                <path>/passwordHash</path>
+                <path>/accessToken</path>
+                <path>/refreshToken</path>
+                <path>/authorization</path>
+                <path>/Authorization</path>
+                <path>/cpf</path>
+                <value>(\d{3}\.\d{3}\.\d{3}-\d{2})</value>
+                <value>(Bearer\s+[A-Za-z0-9._\-]+)</value>
+                <value>(eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+)</value>
+            </jsonGeneratorDecorator>
+        </encoder>
+    </appender>
+
+    <!-- Console legível em dev (com replace de tokens/CPF) -->
+    <appender name="HUMAN" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %replace(%msg){'${MASK_REGEX}','***'}%n</pattern>
+        </encoder>
+    </appender>
+
+    <springProfile name="dev,default">
+        <root level="INFO">
+            <appender-ref ref="HUMAN"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod,staging">
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+    </springProfile>
+
+</configuration>

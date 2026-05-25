@@ -1,0 +1,33 @@
+# Maven
+target/
+.mvn/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+.azure/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Spring
+out/
+build/
+
+# Test reports
+test-output/
