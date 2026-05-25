@@ -2,8 +2,6 @@
 
 API REST do projeto **Ford VIN Share**, da Challenge FIAP 2026. Cobre as disciplinas de **Arquitetura Orientada a Serviços e Web Services (SOA)** e de **Cybersecurity**.
 
-Plano de implementação detalhado: [`../docs/plano-implementacao-java.md`](../docs/plano-implementacao-java.md).
-
 ## Equipe
 
 | Nome | RM |
