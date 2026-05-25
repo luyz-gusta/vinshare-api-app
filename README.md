@@ -107,12 +107,9 @@ com.fiap.vinshare
 ## Banco de dados
 
 - Migrations em `src/main/resources/db/migration/`.
-- `V1__init.sql` cria todas as tabelas, enums e índices descritos em [`../docs/banco-de-dados/`](../docs/banco-de-dados/).
 - Próximas migrations seguem o padrão `V<timestamp>__descricao.sql`.
 
 ## Segurança (resumo)
-
-Implementação atende às cinco frentes da disciplina de Cybersecurity. Detalhes em [`../docs/disciplinas/cybersecurity.md`](../docs/disciplinas/cybersecurity.md).
 
 - JWT com access curto (15 min) e refresh longo (7 dias).
 - BCrypt cost 12 nas senhas.
@@ -125,10 +122,3 @@ Implementação atende às cinco frentes da disciplina de Cybersecurity. Detalhe
 - Logs JSON com `correlationId` e campos sensíveis mascarados.
 - Audit log para ações críticas.
 
-## Documentação relacionada
-
-- Plano de implementação: [`../docs/plano-implementacao-java.md`](../docs/plano-implementacao-java.md)
-- Contrato de endpoints: [`../docs/api-endpoints-mobile.md`](../docs/api-endpoints-mobile.md)
-- Banco de dados: [`../docs/banco-de-dados/`](../docs/banco-de-dados/)
-- Disciplina de SOA: [`../docs/disciplinas/arquitetura-soa.md`](../docs/disciplinas/arquitetura-soa.md)
-- Disciplina de Cybersecurity: [`../docs/disciplinas/cybersecurity.md`](../docs/disciplinas/cybersecurity.md)
