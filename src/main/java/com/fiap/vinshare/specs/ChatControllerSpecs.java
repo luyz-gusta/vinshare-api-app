@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 import java.util.UUID;
 
-@Tag(name = "Chat", description = "Suporte conversacional com IA (Claude)")
+@Tag(name = "Chat", description = "Suporte conversacional com IA (Gemini)")
 @ApiResponseInternalServerError
 @ApiResponseUnauthorized
 public interface ChatControllerSpecs {

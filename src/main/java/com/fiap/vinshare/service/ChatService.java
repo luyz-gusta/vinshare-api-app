@@ -48,7 +48,7 @@ public class ChatService {
     private final CustomerRepository customerRepository;
     private final VehicleRepository vehicleRepository;
     private final WarrantyRepository warrantyRepository;
-    private final ClaudeClient claudeClient;
+    private final AiChatClient aiChatClient;
     private final InputSanitizer sanitizer;
 
     @Transactional
@@ -81,10 +81,10 @@ public class ChatService {
                 .toList();
 
         String systemWithContext = SYSTEM_PROMPT + buildPseudonimizedContext(user);
-        log.debug("Chat: chamando Claude para sessão {} (histórico de {} mensagens)",
+        log.debug("Chat: chamando IA para sessão {} (histórico de {} mensagens)",
                 session.getId(), history.size());
 
-        String reply = claudeClient.complete(systemWithContext, history);
+        String reply = aiChatClient.complete(systemWithContext, history);
         List<SuggestedActionDTO> actions = inferActions(reply);
 
         ChatMessage assistantMessage = ChatMessage.builder()
