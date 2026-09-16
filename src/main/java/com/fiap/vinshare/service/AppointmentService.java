@@ -41,9 +41,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AppointmentService {
 
-    private static final List<AppointmentStatus> ACTIVE_STATUSES =
-            List.of(AppointmentStatus.SCHEDULED, AppointmentStatus.CHECKED_IN);
-
     private final AppointmentRepository appointmentRepository;
     private final CustomerRepository customerRepository;
     private final VehicleRepository vehicleRepository;
@@ -71,8 +68,8 @@ public class AppointmentService {
         if (req.scheduledAt().isBefore(OffsetDateTime.now())) {
             throw new BusinessRuleException("Não é possível agendar em uma data passada");
         }
-        if (appointmentRepository.existsByDealershipIdAndScheduledAtAndStatusIn(
-                dealership.getId(), req.scheduledAt(), ACTIVE_STATUSES)) {
+        if (appointmentRepository.existsActiveConflict(
+                dealership.getId(), req.scheduledAt(), AppointmentStatus.SCHEDULED, AppointmentStatus.CHECKED_IN)) {
             throw new BusinessRuleException("Já existe um agendamento neste horário para essa concessionária");
         }
 
@@ -95,8 +92,8 @@ public class AppointmentService {
         Customer customer = requireCustomer(user);
         Page<Appointment> page = (status == null)
                 ? appointmentRepository.findAllByCustomerIdOrderByScheduledAtDesc(customer.getId(), pageable)
-                : appointmentRepository.findAllByCustomerIdAndStatusInOrderByScheduledAtDesc(
-                customer.getId(), List.of(status), pageable);
+                : appointmentRepository.findAllByCustomerIdAndStatusOrderByScheduledAtDesc(
+                customer.getId(), status, pageable);
         return page.map(this::toDTO);
     }
 
