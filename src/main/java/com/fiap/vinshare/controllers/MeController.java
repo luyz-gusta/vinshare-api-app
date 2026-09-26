@@ -1,6 +1,7 @@
 package com.fiap.vinshare.controllers;
 
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
+import com.fiap.vinshare.domain.dto.auth.ChangePasswordRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.MeResponseDTO;
 import com.fiap.vinshare.domain.dto.device.DeviceResponseDTO;
 import com.fiap.vinshare.domain.dto.device.RegisterDeviceRequestDTO;
@@ -24,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,6 +53,15 @@ public class MeController implements MeControllerSpecs {
     public ResponseEntity<ApiSingleResponse<MeResponseDTO>> me() {
         var user = SecurityUtils.requireCurrentUser();
         return ResponseEntity.ok(ApiSingleResponse.of(meService.buildMe(user)));
+    }
+
+    @Override
+    @PatchMapping("/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequestDTO request) {
+        var user = SecurityUtils.requireCurrentUser();
+        meService.changePassword(user, request);
+        return ResponseEntity.noContent().build();
     }
 
     @Override

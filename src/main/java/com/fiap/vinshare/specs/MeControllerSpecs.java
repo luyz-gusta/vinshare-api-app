@@ -1,6 +1,7 @@
 package com.fiap.vinshare.specs;
 
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
+import com.fiap.vinshare.domain.dto.auth.ChangePasswordRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.MeResponseDTO;
 import com.fiap.vinshare.domain.dto.device.DeviceResponseDTO;
 import com.fiap.vinshare.domain.dto.device.RegisterDeviceRequestDTO;
@@ -28,6 +29,9 @@ public interface MeControllerSpecs {
 
     @Operation(summary = "Dados do usuário autenticado")
     ResponseEntity<ApiSingleResponse<MeResponseDTO>> me();
+
+    @Operation(summary = "Altera a senha do usuário autenticado, exigindo a senha atual")
+    ResponseEntity<Void> changePassword(@Valid ChangePasswordRequestDTO request);
 
     @Operation(summary = "Veículos do cliente autenticado")
     ResponseEntity<ApiSingleResponse<List<VehicleResponseDTO>>> myVehicles();
