@@ -1,6 +1,7 @@
 package com.fiap.vinshare.controllers;
 
 import com.fiap.vinshare.service.PrivacyService;
+import com.fiap.vinshare.domain.dto.privacy.DeleteAccountRequestDTO;
 import com.fiap.vinshare.domain.dto.privacy.PersonalDataExportDTO;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.ChangePasswordRequestDTO;
@@ -78,9 +79,9 @@ public class MeController implements MeControllerSpecs {
     @Override
     @DeleteMapping
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<Void> deleteMyAccount() {
+    public ResponseEntity<Void> deleteMyAccount(@Valid @RequestBody DeleteAccountRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
-        privacyService.anonymize(user);
+        privacyService.anonymize(user, request.currentPassword());
         return ResponseEntity.noContent().build();
     }
 

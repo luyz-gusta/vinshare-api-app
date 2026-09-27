@@ -95,8 +95,10 @@ sequenceDiagram
     API-->>App: 200, ou 401 + WWW-Authenticate: Bearer error="invalid_token"
     App->>Auth: POST /auth/refresh (refreshToken)
     alt refresh vigente
-        Auth->>DB: revoga o atual e emite novo par (rotação)
+        Auth->>DB: trava o token (FOR UPDATE), revoga e emite novo par (rotação)
         Auth-->>App: 200 novo par
+    else rotacionado há menos de 30 s (app renovando em paralelo)
+        Auth-->>App: 401, sessão mantida
     else refresh já rotacionado (reuso = possível roubo)
         Auth->>DB: revoga todos os tokens do usuário
         Auth-->>App: 401 + evento REFRESH_TOKEN_REUSE
@@ -149,7 +151,7 @@ Base: `/api/v1`. Sucesso sempre no envelope `ApiSingleResponse`; erro sempre `ap
 | GET | /me/services | 200 (paginado) | CLIENT |
 | GET | /me/appointments | 200 (paginado) | CLIENT |
 | GET | /me/data-export | 200 | CLIENT |
-| DELETE | /me | 204 | CLIENT |
+| DELETE | /me | 204 (corpo com a senha atual; 422 senha errada, 429 após 5 erros); anonimiza a conta | CLIENT |
 | POST | /me/devices | 201 | autenticado |
 | DELETE | /me/devices/{token} | 204 | autenticado |
 | GET | /me/loyalty/balance | 200 | CLIENT |
@@ -197,7 +199,7 @@ Base: `/api/v1`. Sucesso sempre no envelope `ApiSingleResponse`; erro sempre `ap
    - Cada um representa uma transição explícita, com pré-condições próprias: `PATCH` quando muda o estado de um recurso existente, `POST` quando cria outro (resgate → voucher).
    - A evolução prevista para a v2 é `PATCH /appointments/{id}` com `{"status": ...}` e `POST /me/loyalty/redemptions`.
 2. **404 e não 403 fora do escopo.** Um cliente ou analista que tenta acessar um objeto alheio recebe 404, para não confirmar que o objeto existe (OWASP API1).
-3. **Refresh token opaco e rotacionado.** É guardado só como hash; o reuso de um token antigo derruba a sessão inteira. Sessões encerradas por troca de senha ou anonimização são **apagadas**, não revogadas, para não disparar alarmes falsos de reuso.
+3. **Refresh token opaco e rotacionado.** É guardado só como hash; o reuso de um token antigo derruba a sessão inteira. A renovação trava a linha do token, então ele vale uma única vez mesmo com chamadas simultâneas; um token trocado há menos de 30 s recebe 401 sem derrubar a sessão, porque é o app renovando duas vezes em paralelo. Sessões encerradas por troca de senha ou anonimização são **apagadas**, não revogadas, para não disparar alarmes falsos de reuso.
 4. **Erros RFC 7807 inclusive nos filtros.** 401, 403 e 429 saem no mesmo formato do handler global.
 5. **Integridade do payload.** O filtro HMAC `X-Request-Signature` foi removido, por três motivos: nunca era aplicado (ignorava o context-path), deixava passar quando faltava a chave e exigiria segredo embarcado no app. A integridade é garantida por TLS, JWT assinado e trilha de auditoria.
 6. **Chamadas externas.** A IA roda fora de transação de banco, com timeout de 5 s para conexão e 20 s para leitura. O texto passa por redação de CPF, e-mail e telefone antes de sair.

@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -24,8 +23,14 @@ import java.util.UUID;
  * Registra eventos críticos na tabela audit_log (Cybersecurity, frente 5).
  *
  * Princípios:
- *  - Nunca lança exceção para o fluxo de negócio (auditoria não pode derrubar a requisição).
- *  - Grava em transação própria (REQUIRES_NEW) para sobreviver a rollback do chamador.
+ *  - Grava na transação do chamador: o registro e a operação são confirmados juntos,
+ *    e cada requisição usa uma única conexão do pool. Uma transação própria
+ *    (REQUIRES_NEW) pediria uma segunda conexão com a primeira presa, e sob carga o
+ *    pool trava (todas as threads esperando a segunda conexão).
+ *  - Eventos de falha registrados antes de uma exceção só persistem se o chamador
+ *    declarar noRollbackFor para ela (login, refresh, troca de senha, exclusão de conta).
+ *  - Erros ao montar o registro não derrubam a requisição; erro do banco derruba,
+ *    porque o registro faz parte da transação da operação.
  *  - Nunca persiste dados pessoais sensíveis (CPF, senha, token) no payload.
  */
 @Slf4j
@@ -57,7 +62,7 @@ public class AuditService {
     @Value("${security.audit.bulk-query-threshold:100}")
     private int bulkQueryThreshold;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void record(String action, String resourceType, UUID resourceId, Map<String, Object> payload) {
         try {
             HttpServletRequest request = currentRequest();
@@ -77,22 +82,22 @@ public class AuditService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void loginSuccess(UUID userId, String email) {
         record(LOGIN_SUCCESS, "users", userId, Map.of("email", email));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void loginFailure(String email) {
         record(LOGIN_FAILURE, "users", null, Map.of("email", email == null ? "" : email));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void suspiciousLogin(String email, int attempts) {
         record(SUSPICIOUS_LOGIN, "users", null, Map.of("email", email == null ? "" : email, "attempts", attempts));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void leadAction(UUID customerId, String channel, String templateId) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("channel", channel);
@@ -103,14 +108,14 @@ public class AuditService {
     /**
      * Registra BULK_QUERY quando uma listagem retorna acima do threshold configurado.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void checkBulkQuery(String resourceType, long resultCount) {
         if (resultCount >= bulkQueryThreshold) {
             record(BULK_QUERY, resourceType, null, Map.of("resultCount", resultCount, "threshold", bulkQueryThreshold));
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void notificationSent(UUID userId, String type) {
         record(NOTIFICATION_SENT, "users", userId, Map.of("type", type));
     }

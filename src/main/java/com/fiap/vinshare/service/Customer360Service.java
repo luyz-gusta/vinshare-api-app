@@ -47,7 +47,8 @@ public class Customer360Service {
     private final CustomerAccessPolicy accessPolicy;
     private final AuditService auditService;
 
-    @Transactional(readOnly = true)
+    // Sem readOnly: grava a auditoria na mesma transação (numa transação readOnly ela se perderia).
+    @Transactional
     public Customer360DTO get360(UUID customerId, User user) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Cliente", customerId));
@@ -114,7 +115,8 @@ public class Customer360Service {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    // Sem readOnly: grava a auditoria na mesma transação (numa transação readOnly ela se perderia).
+    @Transactional
     public List<TimelineEventDTO> timeline(UUID customerId, OffsetDateTime from, OffsetDateTime to, User user) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Cliente", customerId));

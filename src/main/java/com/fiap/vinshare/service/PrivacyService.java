@@ -5,6 +5,7 @@ import com.fiap.vinshare.domain.entities.Customer;
 import com.fiap.vinshare.domain.entities.DeviceToken;
 import com.fiap.vinshare.domain.entities.LoyaltyAccount;
 import com.fiap.vinshare.domain.entities.User;
+import com.fiap.vinshare.infra.errors.exceptions.BusinessValidationException;
 import com.fiap.vinshare.infra.errors.exceptions.ResourceNotFoundException;
 import com.fiap.vinshare.infra.security.CryptoService;
 import com.fiap.vinshare.repositories.AppointmentRepository;
@@ -52,8 +53,10 @@ public class PrivacyService {
     private final CryptoService cryptoService;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final CurrentPasswordVerifier currentPasswordVerifier;
 
-    @Transactional(readOnly = true)
+    // Sem readOnly: grava a auditoria na mesma transação (numa transação readOnly ela se perderia).
+    @Transactional
     public PersonalDataExportDTO export(User user) {
         Customer customer = requireCustomer(user);
 
@@ -92,9 +95,12 @@ public class PrivacyService {
      * Elimina os identificadores diretos do titular e encerra a conta.
      * Serviços, valores e pontos permanecem, sem vínculo com a pessoa, por
      * obrigação legal e contábil (LGPD art. 16, I) e para as estatísticas de VIN Share.
+     * Irreversível: exige a senha atual (reautenticação), não só o access token.
+     * noRollbackFor: o login suspeito auditado no quinto erro persiste com o 422.
      */
-    @Transactional
-    public void anonymize(User user) {
+    @Transactional(noRollbackFor = BusinessValidationException.class)
+    public void anonymize(User user, String currentPassword) {
+        currentPasswordVerifier.verify(user, currentPassword);
         Customer customer = requireCustomer(user);
         String anonId = UUID.randomUUID().toString();
 

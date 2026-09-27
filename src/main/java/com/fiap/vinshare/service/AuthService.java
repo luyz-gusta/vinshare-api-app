@@ -25,6 +25,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
@@ -43,6 +44,9 @@ public class AuthService {
     private final AuditService auditService;
     private final LoginAttemptService loginAttemptService;
     private final SecurityEvents securityEvents;
+
+    /** Tolerância para renovações simultâneas do app (várias chamadas com o mesmo token). */
+    private static final Duration REUSE_GRACE = Duration.ofSeconds(30);
 
     private String dummyHash;
 
@@ -87,7 +91,8 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
-    @Transactional
+    /** noRollbackFor: a auditoria da falha (e do login suspeito) persiste mesmo respondendo 401. */
+    @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResponseDTO login(LoginRequestDTO request) {
         String email = request.email().toLowerCase().trim();
         loginAttemptService.checkAllowed(email);
@@ -111,18 +116,24 @@ public class AuthService {
     }
 
     /**
-     * Rotaciona o refresh token. Se um token já rotacionado/revogado for
-     * reapresentado, trata como roubo e revoga toda a sessão do usuário.
+     * Rotaciona o refresh token (uso único: o lock serializa renovações simultâneas).
+     * Se um token já rotacionado/revogado for reapresentado, trata como roubo e
+     * revoga toda a sessão do usuário. Exceção: revogado há menos de REUSE_GRACE é o
+     * app renovando duas vezes em paralelo; responde 401 sem derrubar a sessão que a
+     * outra chamada acabou de receber.
      * noRollbackFor: a revogação precisa persistir mesmo lançando 401.
      */
     @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResponseDTO refresh(RefreshRequestDTO request) {
         String hash = jwtService.hashRefreshToken(request.refreshToken());
-        RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
+        RefreshToken stored = refreshTokenRepository.findByTokenHashForUpdate(hash)
                 .orElseThrow(() -> new InvalidCredentialsException("Refresh token inválido"));
         User user = stored.getUser();
 
         if (stored.getRevokedAt() != null) {
+            if (stored.getRevokedAt().isAfter(OffsetDateTime.now().minus(REUSE_GRACE))) {
+                throw new InvalidCredentialsException("Refresh token já utilizado");
+            }
             refreshTokenRepository.revokeAllForUser(user, OffsetDateTime.now());
             auditService.record(AuditService.TOKEN_REUSE_DETECTED, "users", user.getId(), Map.of());
             securityEvents.refreshTokenReuse();

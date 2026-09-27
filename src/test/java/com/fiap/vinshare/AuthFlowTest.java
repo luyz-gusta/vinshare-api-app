@@ -2,14 +2,17 @@ package com.fiap.vinshare;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fiap.vinshare.domain.entities.Customer;
+import com.fiap.vinshare.infra.security.JwtService;
 import com.fiap.vinshare.support.IntegrationTest;
 import com.fiap.vinshare.support.TestData;
 import com.fiap.vinshare.support.TestFixtures;
 import org.junit.jupiter.api.Test;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -122,6 +125,12 @@ class AuthFlowTest extends IntegrationTest {
     @Value("${security.jwt.secret}")
     private String jwtSecret;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private JwtService jwtService;
+
     private int refresh(String refreshToken) throws Exception {
         return mockMvc.perform(post("/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -129,19 +138,36 @@ class AuthFlowTest extends IntegrationTest {
                 .andReturn().getResponse().getStatus();
     }
 
+    private String rotate(String refreshToken) throws Exception {
+        var rotated = mockMvc.perform(post("/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+                .andExpect(status().isOk()).andReturn();
+        return json(rotated).at("/data/refreshToken").asText();
+    }
+
     @Test
     void refreshReutilizadoRevogaTodaASessao() throws Exception {
         Customer customer = fixtures.customer();
         String r1 = login(customer.getUser().getEmail(), TestFixtures.PASSWORD).get("refreshToken").asText();
-
-        var rotated = mockMvc.perform(post("/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"refreshToken\":\"" + r1 + "\"}"))
-                .andExpect(status().isOk()).andReturn();
-        String r2 = json(rotated).at("/data/refreshToken").asText();
+        String r2 = rotate(r1);
+        // Rotação antiga: fora da tolerância para renovações simultâneas do app.
+        jdbcTemplate.update("UPDATE refresh_tokens SET revoked_at = now() - interval '5 minutes' WHERE token_hash = ?",
+                jwtService.hashRefreshToken(r1));
 
         assertThat(refresh(r1)).isEqualTo(401);   // reuso do token antigo
         assertThat(refresh(r2)).isEqualTo(401);   // a família inteira foi revogada
+    }
+
+    @Test
+    void refreshRepetidoLogoAposARotacaoNaoDerrubaASessao() throws Exception {
+        // O app renovou duas vezes em paralelo: a segunda chamada chega com o token que a primeira acabou de trocar.
+        Customer customer = fixtures.customer();
+        String r1 = login(customer.getUser().getEmail(), TestFixtures.PASSWORD).get("refreshToken").asText();
+        String r2 = rotate(r1);
+
+        assertThat(refresh(r1)).isEqualTo(401);   // o token antigo não renova de novo
+        assertThat(refresh(r2)).isEqualTo(200);   // e a sessão continua de pé
     }
 
     @Test

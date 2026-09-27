@@ -73,7 +73,7 @@ cp .env.example .env
 | `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD` | sim | Veja o `.env.example` |
 | `SEED_ENABLED` / `SEED_DEFAULT_PASSWORD` | não / sim, se o seed estiver ligado | `true` popula 500 clientes sintéticos; senha com ≥ 12 caracteres |
 | `CORS_ORIGINS` | não | Origens separadas por vírgula |
-| `CLIENT_IP_TRUSTED_HOPS` | não | `0` local, `1` no Azure |
+| `CLIENT_IP_TRUSTED_HOPS` | não | `0` local; no Azure App Service a API assume `1` sozinha |
 | `GEMINI_API_KEY`, `EXPO_ACCESS_TOKEN` | não | Vazias ativam o modo simulado |
 | `RETENTION_ENABLED` | não | `true` em produção |
 
@@ -117,10 +117,10 @@ A imagem roda com usuário sem privilégio (uid 10001), só com o JRE e com heal
 | `OwnershipTest` | OWASP API1: CLIENT só vê o que é dele, ANALYST só vê a própria concessionária, paginação de leads |
 | `OpenApiContractTest` | Swagger documenta os status reais e o schema ProblemDetail |
 | `RateLimitTest`, `SecurityHeadersTest` | 429 com Retry-After, X-Forwarded-For forjado não burla o limite, HSTS/CSP/CORS, correlation ID |
-| `LoyaltyRedeemConcurrencyTest` | Resgates simultâneos não gastam o mesmo saldo |
+| `LoyaltyRedeemConcurrencyTest`, `LoginConcurrencyTest`, `RefreshConcurrencyTest` | Mais requisições simultâneas que conexões no pool: resgates não gastam o mesmo saldo, rajada de logins inválidos responde 401 sem travar o pool, refresh simultâneo renova uma única vez |
 | `VehicleAndDeviceTest` | Odômetro não regride; token de push de outra conta é recusado |
 | `ChatAndLoyaltyFlowTest` | 201 no chat e no resgate; CPF e e-mail não chegam ao provedor de IA |
-| `DataSubjectRightsTest`, `RetentionTest` | Exportação e anonimização (LGPD art. 18), retenção de tokens |
+| `DataSubjectRightsTest`, `RetentionTest` | Exportação e anonimização (LGPD art. 18) com reautenticação, retenção de tokens |
 | `SecurityEventsTest` | Métricas de segurança e auditoria de acesso a dados pessoais |
 | Unitários (`JwtServiceTest`, `CryptoServiceTest`, `ClientIpResolverTest`, `LoginAttemptServiceTest`, `PiiRedactorTest`, `LeadHealthStatusTest`) | Regras isoladas |
 
@@ -183,7 +183,7 @@ As migrations ficam em `src/main/resources/db/migration/` (`V1` a `V4`). A próx
 
 ## Segurança (resumo)
 
-- **Tokens:** JWT HS512 de 15 min com `iss`, `aud` e `jti`. O papel é recarregado do banco a cada requisição. Refresh token opaco de 7 dias, rotacionado, com detecção de reuso.
+- **Tokens:** JWT HS512 de 15 min com `iss`, `aud` e `jti`. O papel é recarregado do banco a cada requisição. Refresh token opaco de 7 dias, de uso único (rotação com lock), com detecção de reuso e tolerância de 30 s para renovações simultâneas do app.
 - **Senhas e força bruta:** BCrypt custo 12. Rate limit por IP real (login, cadastro, refresh, chat e geral), mais bloqueio por e-mail após 5 falhas em 10 min, válido também para a troca de senha.
 - **Troca de senha:** `PATCH /me/password` exige a senha atual e encerra todas as sessões (refresh tokens). O app pede novo login quando o access token atual expira, em até 15 min.
 - **Autorização:** RBAC `CLIENT` / `ANALYST` / `ADMIN`, com escopo por dono e por concessionária (404 fora do escopo).
@@ -191,4 +191,4 @@ As migrations ficam em `src/main/resources/db/migration/` (`V1` a `V4`). A próx
 - **Erros:** RFC 7807 em tudo, inclusive 401, 403 e 429, sem stack trace.
 - **Headers:** HSTS, CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy. CORS restrito e sem credenciais.
 - **Observabilidade:** logs JSON com `correlationId` e mascaramento, métricas de segurança, trilha `audit_log` e alertas no Azure Monitor.
-- **LGPD:** consentimento obrigatório, exportação e anonimização dos dados do titular, retenção automática.
+- **LGPD:** consentimento obrigatório, exportação e anonimização dos dados do titular (a exclusão exige a senha atual), retenção automática.

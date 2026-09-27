@@ -83,7 +83,8 @@ public class SegmentService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    // Sem readOnly: grava a auditoria na mesma transação (numa transação readOnly ela se perderia).
+    @Transactional
     public Page<SegmentCustomerDTO> listBySegment(CustomerSegmentType type, Pageable pageable, User user) {
         CustomerAccessPolicy.Scope scope = accessPolicy.scopeFor(user);
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
