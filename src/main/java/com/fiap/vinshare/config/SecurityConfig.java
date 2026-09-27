@@ -3,7 +3,6 @@ package com.fiap.vinshare.config;
 import com.fiap.vinshare.infra.security.JsonAccessDeniedHandler;
 import com.fiap.vinshare.infra.security.JsonAuthenticationEntryPoint;
 import com.fiap.vinshare.infra.security.JwtAuthenticationFilter;
-import com.fiap.vinshare.infra.security.PayloadIntegrityFilter;
 import com.fiap.vinshare.infra.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +48,6 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
-    private final PayloadIntegrityFilter payloadIntegrityFilter;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
     private final JsonAccessDeniedHandler accessDeniedHandler;
 
@@ -89,7 +87,6 @@ public class SecurityConfig {
 
         http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        http.addFilterAfter(payloadIntegrityFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

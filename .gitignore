@@ -18,10 +18,15 @@ Thumbs.db
 *.log
 logs/
 
-# Variáveis de ambiente
+# Variáveis de ambiente e segredos
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+application-local.properties
 
 # Spring
 out/

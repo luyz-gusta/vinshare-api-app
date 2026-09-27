@@ -7,6 +7,7 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,7 +44,6 @@ import java.util.Random;
 @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataSeeder implements CommandLineRunner {
 
-    private static final String DEFAULT_PASSWORD = "senha123";
     private static final String[] MODELS = {"Ka", "Fiesta", "EcoSport", "Ranger", "Bronco", "Territory"};
     private static final String[] VERSIONS = {"SE 1.5", "Titanium 2.0", "XLT 3.2", "Raptor 3.0 V6", "Storm 2.0", "Limited 1.5T"};
     private static final String[] NPS_LIKED = {"ATENDIMENTO", "TEMPO_DE_ESPERA", "QUALIDADE_DO_SERVICO", "INSTALACOES"};
@@ -90,6 +90,9 @@ public class DataSeeder implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
 
+    @Value("${app.seed.default-password:}")
+    private String defaultPassword;
+
     private final Faker faker = new Faker(new Locale("pt", "BR"), new Random(42));
     private final Random rnd = new Random(42);
 
@@ -99,6 +102,10 @@ public class DataSeeder implements CommandLineRunner {
         if (customerRepository.count() > 0) {
             log.info("Seed ignorado: banco já contém clientes.");
             return;
+        }
+        if (defaultPassword == null || defaultPassword.length() < 12) {
+            throw new IllegalStateException(
+                    "SEED_DEFAULT_PASSWORD é obrigatória (mínimo 12 caracteres) quando SEED_ENABLED=true.");
         }
         log.info("Iniciando seed do dataset sintético...");
 
@@ -110,7 +117,7 @@ public class DataSeeder implements CommandLineRunner {
         List<Dealership> dealerships = seedDealerships(serviceTypes);
         seedAdminAndAnalysts(dealerships);
 
-        String encodedPassword = passwordEncoder.encode(DEFAULT_PASSWORD);
+        String encodedPassword = passwordEncoder.encode(defaultPassword);
         int serviceCounter = 0;
 
         for (int i = 0; i < 500; i++) {
@@ -188,7 +195,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedAdminAndAnalysts(List<Dealership> dealerships) {
-        String pwd = passwordEncoder.encode(DEFAULT_PASSWORD);
+        String pwd = passwordEncoder.encode(defaultPassword);
         userRepository.save(User.builder()
                 .email("owner@ford.com")
                 .displayName("Operador Ford")

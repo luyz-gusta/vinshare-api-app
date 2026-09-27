@@ -1,7 +1,6 @@
 package com.fiap.vinshare.infra.security;
 
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,17 +20,16 @@ import java.util.HexFormat;
  *
  * Cobre Cybersecurity frente 4 (Dados e Privacidade).
  */
-@Slf4j
 @Service
 public class CryptoService {
 
     private static final int GCM_TAG_BITS = 128;
     private static final int IV_LEN = 12;
 
-    @Value("${security.encryption.cpf-aes-key:}")
+    @Value("${security.encryption.cpf-aes-key}")
     private String aesKeyB64;
 
-    @Value("${security.encryption.cpf-hmac-key:}")
+    @Value("${security.encryption.cpf-hmac-key}")
     private String hmacKey;
 
     private SecretKey aesKey;
@@ -41,22 +39,19 @@ public class CryptoService {
     @PostConstruct
     void init() {
         if (aesKeyB64 == null || aesKeyB64.isBlank()) {
-            log.warn("CPF_AES_KEY não definida; gerando uma chave em memória. Defina em produção!");
-            byte[] key = new byte[32];
-            random.nextBytes(key);
-            aesKey = new SecretKeySpec(key, "AES");
-        } else {
-            byte[] decoded = Base64.getDecoder().decode(aesKeyB64);
-            if (decoded.length != 32) {
-                throw new IllegalStateException("CPF_AES_KEY deve ter 32 bytes (256 bits) em Base64");
-            }
-            aesKey = new SecretKeySpec(decoded, "AES");
+            throw new IllegalStateException(
+                    "CPF_AES_KEY é obrigatória (32 bytes em Base64). Gere com: openssl rand -base64 32");
         }
+        byte[] decoded = Base64.getDecoder().decode(aesKeyB64);
+        if (decoded.length != 32) {
+            throw new IllegalStateException("CPF_AES_KEY deve ter 32 bytes (256 bits) em Base64");
+        }
+        aesKey = new SecretKeySpec(decoded, "AES");
 
-        String hmacSeed = (hmacKey == null || hmacKey.isBlank())
-                ? "fallback-hmac-key-change-in-production"
-                : hmacKey;
-        hmacSecret = new SecretKeySpec(hmacSeed.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        if (hmacKey == null || hmacKey.length() < 32) {
+            throw new IllegalStateException("CPF_HMAC_KEY é obrigatória e deve ter pelo menos 32 caracteres.");
+        }
+        hmacSecret = new SecretKeySpec(hmacKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
     public String encrypt(String plainCpf) {
