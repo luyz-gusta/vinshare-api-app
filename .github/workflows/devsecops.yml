@@ -80,18 +80,18 @@ jobs:
             awk -F, 'NR>1 {m+=$8; c+=$9} END {printf "### Cobertura de linhas (JaCoCo)\n\n%.1f%% (%d de %d linhas)\n", 100*c/(m+c), c, m+c}' \
               target/site/jacoco/jacoco.csv >> "$GITHUB_STEP_SUMMARY"
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: relatorios-de-teste
           path: |
             target/surefire-reports/
             target/site/jacoco/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: app-jar
           path: target/vinshare-api-0.0.1-SNAPSHOT.jar
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: target/classes/META-INF/sbom/application.cdx.json
