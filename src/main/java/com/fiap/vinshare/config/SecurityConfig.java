@@ -1,5 +1,11 @@
 package com.fiap.vinshare.config;
 
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.AnyRequestMatcher;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import com.fiap.vinshare.infra.security.JsonAccessDeniedHandler;
 import com.fiap.vinshare.infra.security.JsonAuthenticationEntryPoint;
 import com.fiap.vinshare.infra.security.JwtAuthenticationFilter;
@@ -46,6 +52,12 @@ public class SecurityConfig {
             "/actuator/info"
     };
 
+    /** Swagger UI e OpenAPI precisam de scripts/estilos; a CSP restritiva vale só para a API. */
+    private static final RequestMatcher DOCS = request -> {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return path.startsWith("/docs") || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
+    };
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
@@ -80,9 +92,18 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(f -> f.deny())
                         .contentTypeOptions(c -> {})
-                        .referrerPolicy(r -> r.policy(
-                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER
-                        ))
+                        .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                        // O TLS termina no front-end do Azure; o HSTS é enviado sempre, não só quando isSecure().
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31_536_000)
+                                .requestMatcher(AnyRequestMatcher.INSTANCE))
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                new NegatedRequestMatcher(DOCS),
+                                new StaticHeadersWriter("Content-Security-Policy",
+                                        "default-src 'none'; frame-ancestors 'none'")))
+                        .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
+                                "camera=(), microphone=(), geolocation=()"))
                 );
 
         http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);

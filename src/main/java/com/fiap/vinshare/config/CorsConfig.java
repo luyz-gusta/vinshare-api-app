@@ -20,7 +20,8 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowCredentials(true);
+        // Autenticação por header Authorization (Bearer), não por cookie: credenciais de CORS desnecessárias.
+        config.setAllowCredentials(false);
         config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Request-Id"));
         config.setExposedHeaders(List.of("X-Request-Id"));
