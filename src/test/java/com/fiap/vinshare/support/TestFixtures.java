@@ -111,6 +111,15 @@ public class TestFixtures {
         return saved;
     }
 
+    public Customer customer(Dealership homeDealership) {
+        Customer customer = customer();
+        User user = customer.getUser();
+        customer.setHomeDealership(homeDealership);
+        Customer saved = customerRepository.save(customer);
+        saved.setUser(user);   // mesmo cuidado de customer(): o merge devolve o User como proxy lazy
+        return saved;
+    }
+
     public Vehicle vehicle(Customer customer) {
         return vehicleRepository.save(Vehicle.builder()
                 .customer(customer)

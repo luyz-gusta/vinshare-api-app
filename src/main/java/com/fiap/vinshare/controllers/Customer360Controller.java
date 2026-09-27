@@ -1,5 +1,6 @@
 package com.fiap.vinshare.controllers;
 
+import com.fiap.vinshare.infra.security.SecurityUtils;
 import com.fiap.vinshare.domain.dto.customer.Customer360DTO;
 import com.fiap.vinshare.domain.dto.customer.TimelineEventDTO;
 import com.fiap.vinshare.infra.responses.details.ApiSingleResponse;
@@ -29,7 +30,8 @@ public class Customer360Controller implements Customer360ControllerSpecs {
     @Override
     @GetMapping("/{customerId}/360")
     public ResponseEntity<ApiSingleResponse<Customer360DTO>> get360(@PathVariable UUID customerId) {
-        return ResponseEntity.ok(ApiSingleResponse.of(customer360Service.get360(customerId)));
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(customer360Service.get360(customerId, user)));
     }
 
     @Override
@@ -38,6 +40,7 @@ public class Customer360Controller implements Customer360ControllerSpecs {
             @PathVariable UUID customerId,
             @RequestParam(required = false) OffsetDateTime from,
             @RequestParam(required = false) OffsetDateTime to) {
-        return ResponseEntity.ok(ApiSingleResponse.of(customer360Service.timeline(customerId, from, to)));
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(customer360Service.timeline(customerId, from, to, user)));
     }
 }

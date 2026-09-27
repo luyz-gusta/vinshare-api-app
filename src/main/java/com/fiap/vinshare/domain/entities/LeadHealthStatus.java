@@ -8,10 +8,28 @@ import java.math.BigDecimal;
  * num único lugar e habilitar filtro server-side em /leads?status=.
  */
 public enum LeadHealthStatus {
-    NOVO,
-    EM_RISCO,
-    PERDIDO,
-    RECUPERADO;
+    NOVO(20, 60),
+    EM_RISCO(60, 80),
+    PERDIDO(80, 1000),
+    RECUPERADO(0, 20);
+
+    private final BigDecimal minRisk;
+    private final BigDecimal maxRiskExclusive;
+
+    LeadHealthStatus(int minRisk, int maxRiskExclusive) {
+        this.minRisk = BigDecimal.valueOf(minRisk);
+        this.maxRiskExclusive = BigDecimal.valueOf(maxRiskExclusive);
+    }
+
+    /** Menor riskScore (inclusivo) que produz este status. */
+    public BigDecimal minRisk() {
+        return minRisk;
+    }
+
+    /** Limite superior (exclusivo) de riskScore para este status. */
+    public BigDecimal maxRiskExclusive() {
+        return maxRiskExclusive;
+    }
 
     public static LeadHealthStatus fromRiskScore(BigDecimal score) {
         if (score == null) return NOVO;

@@ -1,5 +1,7 @@
 package com.fiap.vinshare.service;
 
+import org.springframework.data.domain.PageRequest;
+import com.fiap.vinshare.domain.entities.User;
 import com.fiap.vinshare.domain.dto.segment.CustomerSegmentDTO;
 import com.fiap.vinshare.domain.dto.segment.SegmentBucketDTO;
 import com.fiap.vinshare.domain.dto.segment.SegmentCustomerDTO;
@@ -35,11 +37,13 @@ public class SegmentService {
     private final VehicleRepository vehicleRepository;
     private final ServiceRecordRepository serviceRecordRepository;
     private final AuditService auditService;
+    private final CustomerAccessPolicy accessPolicy;
 
     @Transactional(readOnly = true)
-    public CustomerSegmentDTO getCustomerSegment(UUID customerId) {
+    public CustomerSegmentDTO getCustomerSegment(UUID customerId, User user) {
         CustomerSegment seg = segmentRepository.findFirstByCustomerIdOrderByPredictedAtDesc(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Segmento do cliente", customerId));
+        accessPolicy.checkAccess(user, seg.getCustomer());
         return toDTO(seg);
     }
 
@@ -80,11 +84,15 @@ public class SegmentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<SegmentCustomerDTO> listBySegment(CustomerSegmentType type, Pageable pageable) {
-        Page<SegmentCustomerDTO> page = segmentRepository.findLatestBySegment(type.name(), pageable)
+    public Page<SegmentCustomerDTO> listBySegment(CustomerSegmentType type, Pageable pageable, User user) {
+        CustomerAccessPolicy.Scope scope = accessPolicy.scopeFor(user);
+        Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<SegmentCustomerDTO> result = segmentRepository.findLatestScoped(List.of(type.name()),
+                        BigDecimal.ZERO, BigDecimal.valueOf(1000),
+                        scope.allDealerships(), scope.dealershipId(), page)
                 .map(this::toSegmentCustomer);
-        auditService.checkBulkQuery("customer_segments", page.getTotalElements());
-        return page;
+        auditService.checkBulkQuery("customer_segments", result.getTotalElements());
+        return result;
     }
 
     private SegmentCustomerDTO toSegmentCustomer(CustomerSegment seg) {

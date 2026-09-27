@@ -1,5 +1,7 @@
 package com.fiap.vinshare.service;
 
+import org.springframework.data.domain.PageRequest;
+import java.math.BigDecimal;
 import com.fiap.vinshare.domain.dto.lead.LeadActionRequestDTO;
 import com.fiap.vinshare.domain.dto.lead.LeadActionResponseDTO;
 import com.fiap.vinshare.domain.dto.lead.LeadResponseDTO;
@@ -26,7 +28,6 @@ import com.fiap.vinshare.repositories.WarrantyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,32 +58,33 @@ public class LeadService {
     private final NpsResponseRepository npsResponseRepository;
     private final InputSanitizer sanitizer;
     private final AuditService auditService;
+    private final CustomerAccessPolicy accessPolicy;
+
+    private static final BigDecimal NO_MAX_RISK = BigDecimal.valueOf(1000);
 
     @Transactional(readOnly = true)
     public Page<LeadResponseDTO> listLeads(CustomerSegmentType segmentFilter,
                                           LeadHealthStatus statusFilter,
-                                          Pageable pageable) {
-        CustomerSegmentType[] targets = (segmentFilter != null)
-                ? new CustomerSegmentType[]{segmentFilter}
-                : AT_RISK.toArray(new CustomerSegmentType[0]);
-
-        List<LeadResponseDTO> all = new java.util.ArrayList<>();
-        for (CustomerSegmentType t : targets) {
-            segmentRepository.findLatestBySegment(t.name(), pageable)
-                    .map(this::toLead)
-                    .forEach(all::add);
-        }
-        if (statusFilter != null) {
-            all = new java.util.ArrayList<>(
-                    all.stream().filter(l -> l.status() == statusFilter).toList());
-        }
-        return new PageImpl<>(all, pageable, all.size());
+                                          Pageable pageable,
+                                          User user) {
+        List<String> segments = (segmentFilter != null ? List.of(segmentFilter) : AT_RISK).stream()
+                .map(Enum::name)
+                .toList();
+        BigDecimal minRisk = statusFilter == null ? BigDecimal.ZERO : statusFilter.minRisk();
+        BigDecimal maxRisk = statusFilter == null ? NO_MAX_RISK : statusFilter.maxRiskExclusive();
+        CustomerAccessPolicy.Scope scope = accessPolicy.scopeFor(user);
+        // Ordenação fixa na consulta (maior risco primeiro); ignora o sort enviado pelo cliente.
+        Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return segmentRepository.findLatestScoped(segments, minRisk, maxRisk,
+                        scope.allDealerships(), scope.dealershipId(), page)
+                .map(this::toLead);
     }
 
     @Transactional(readOnly = true)
-    public LeadResponseDTO findById(UUID customerId) {
+    public LeadResponseDTO findById(UUID customerId, User user) {
         CustomerSegment seg = segmentRepository.findFirstByCustomerIdOrderByPredictedAtDesc(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Lead", customerId));
+        accessPolicy.checkAccess(user, seg.getCustomer());
         return toLead(seg);
     }
 
@@ -92,6 +94,7 @@ public class LeadService {
                 .orElseThrow(() -> new ResourceNotFoundException("Analista não encontrado"));
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Cliente", customerId));
+        accessPolicy.checkAccess(analystUser, customer);
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("notes", sanitizer.sanitize(req.notes()));

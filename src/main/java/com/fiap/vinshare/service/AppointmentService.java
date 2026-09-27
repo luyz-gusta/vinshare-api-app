@@ -85,6 +85,11 @@ public class AppointmentService {
                 .notes(sanitizer.sanitize(req.notes()))
                 .build();
         appointment = appointmentRepository.save(appointment);
+        if (customer.getHomeDealership() == null) {
+            // O primeiro agendamento define a concessionária de relacionamento do cliente.
+            customer.setHomeDealership(dealership);
+            customerRepository.save(customer);
+        }
         log.info("Agendamento criado: id={}, cliente={}", appointment.getId(), customer.getId());
         return toDTO(appointment);
     }

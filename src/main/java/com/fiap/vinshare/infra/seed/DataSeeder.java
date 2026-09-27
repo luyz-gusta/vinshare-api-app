@@ -114,7 +114,7 @@ public class DataSeeder implements CommandLineRunner {
         int serviceCounter = 0;
 
         for (int i = 0; i < 500; i++) {
-            Customer customer = createCustomer(i, encodedPassword);
+            Customer customer = createCustomer(i, encodedPassword, dealerships.get(i % dealerships.size()));
             LoyaltyAccount account = loyaltyAccountRepository.save(
                     LoyaltyAccount.builder().customer(customer).balance(0).build());
 
@@ -212,7 +212,7 @@ public class DataSeeder implements CommandLineRunner {
 
     // ---------------------------------------------------------------- clientes
 
-    private Customer createCustomer(int i, String encodedPassword) {
+    private Customer createCustomer(int i, String encodedPassword, Dealership home) {
         String name = faker.name().fullName();
         User user = userRepository.save(User.builder()
                 .email("cliente" + i + "@email.com")
@@ -229,6 +229,7 @@ public class DataSeeder implements CommandLineRunner {
                 .phone(faker.numerify("+5511#########"))
                 .birthDate(LocalDate.now().minusYears(20 + rnd.nextInt(40)).minusDays(rnd.nextInt(360)))
                 .lgpdConsentAt(OffsetDateTime.now().minusDays(rnd.nextInt(900)))
+                .homeDealership(home)
                 .build());
     }
 

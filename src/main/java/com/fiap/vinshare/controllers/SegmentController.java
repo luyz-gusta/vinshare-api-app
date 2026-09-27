@@ -1,5 +1,6 @@
 package com.fiap.vinshare.controllers;
 
+import com.fiap.vinshare.infra.security.SecurityUtils;
 import com.fiap.vinshare.domain.dto.segment.CustomerSegmentDTO;
 import com.fiap.vinshare.domain.dto.segment.SegmentCustomerDTO;
 import com.fiap.vinshare.domain.dto.segment.SegmentDistributionResponseDTO;
@@ -37,12 +38,14 @@ public class SegmentController implements SegmentControllerSpecs {
     @GetMapping("/segments/{segment}/customers")
     public ResponseEntity<ApiSingleResponse<Page<SegmentCustomerDTO>>> bySegment(
             @PathVariable CustomerSegmentType segment, Pageable pageable) {
-        return ResponseEntity.ok(ApiSingleResponse.of(segmentService.listBySegment(segment, pageable)));
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(segmentService.listBySegment(segment, pageable, user)));
     }
 
     @Override
     @GetMapping("/customers/{customerId}/segment")
     public ResponseEntity<ApiSingleResponse<CustomerSegmentDTO>> getCustomerSegment(@PathVariable UUID customerId) {
-        return ResponseEntity.ok(ApiSingleResponse.of(segmentService.getCustomerSegment(customerId)));
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(segmentService.getCustomerSegment(customerId, user)));
     }
 }

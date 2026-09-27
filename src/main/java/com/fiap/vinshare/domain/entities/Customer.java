@@ -1,5 +1,6 @@
 package com.fiap.vinshare.domain.entities;
 
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -56,6 +57,14 @@ public class Customer {
 
     @Column(name = "lgpd_consent_at")
     private OffsetDateTime lgpdConsentAt;
+
+    /**
+     * Concessionária de relacionamento: define qual analista enxerga os dados
+     * pessoais do cliente. Nula até o primeiro agendamento.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "home_dealership_id")
+    private Dealership homeDealership;
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;

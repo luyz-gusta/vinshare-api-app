@@ -19,18 +19,40 @@ public interface CustomerSegmentRepository extends JpaRepository<CustomerSegment
     Optional<CustomerSegment> findFirstByCustomerIdOrderByPredictedAtDesc(UUID customerId);
 
     /**
-     * Lista clientes (paginado) cujo segmento mais recente é o informado.
-     * Usa subquery para pegar apenas a última predição de cada cliente.
+     * Última predição de cada cliente, filtrada por segmentos, faixa de risco e
+     * (quando allDealerships = false) pela concessionária de relacionamento.
+     * Ordena do maior risco para o menor.
      */
     @Query(value = """
             SELECT cs.* FROM customer_segments cs
+              JOIN customers c ON c.id = cs.customer_id
              WHERE cs.predicted_at = (
                    SELECT MAX(cs2.predicted_at) FROM customer_segments cs2
                     WHERE cs2.customer_id = cs.customer_id
              )
-               AND cs.segment = CAST(:segment AS customer_segment)
-            """, nativeQuery = true)
-    Page<CustomerSegment> findLatestBySegment(@Param("segment") String segment, Pageable pageable);
+               AND CAST(cs.segment AS text) IN (:segments)
+               AND cs.risk_score >= :minRisk AND cs.risk_score < :maxRisk
+               AND (:allDealerships = true OR c.home_dealership_id = CAST(:dealershipId AS uuid))
+             ORDER BY cs.risk_score DESC, cs.customer_id
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM customer_segments cs
+              JOIN customers c ON c.id = cs.customer_id
+             WHERE cs.predicted_at = (
+                   SELECT MAX(cs2.predicted_at) FROM customer_segments cs2
+                    WHERE cs2.customer_id = cs.customer_id
+             )
+               AND CAST(cs.segment AS text) IN (:segments)
+               AND cs.risk_score >= :minRisk AND cs.risk_score < :maxRisk
+               AND (:allDealerships = true OR c.home_dealership_id = CAST(:dealershipId AS uuid))
+            """,
+            nativeQuery = true)
+    Page<CustomerSegment> findLatestScoped(@Param("segments") java.util.Collection<String> segments,
+                                           @Param("minRisk") java.math.BigDecimal minRisk,
+                                           @Param("maxRisk") java.math.BigDecimal maxRisk,
+                                           @Param("allDealerships") boolean allDealerships,
+                                           @Param("dealershipId") String dealershipId,
+                                           Pageable pageable);
 
     /** Conta por segmento na predição mais recente de cada cliente. */
     @Query(value = """

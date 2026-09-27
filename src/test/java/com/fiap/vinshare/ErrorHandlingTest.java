@@ -112,7 +112,7 @@ class ErrorHandlingTest extends IntegrationTest {
     void acaoDeLeadSemTemplateIdNaoGera500() throws Exception {
         Dealership dealership = fixtures.dealership();
         User analyst = fixtures.analyst(dealership);
-        Customer customer = fixtures.customer();
+        Customer customer = fixtures.customer(dealership);
 
         mockMvc.perform(post("/leads/" + customer.getId() + "/actions")
                         .header("Authorization", bearer(fixtures.tokenFor(analyst)))

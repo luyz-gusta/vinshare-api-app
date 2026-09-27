@@ -40,13 +40,15 @@ public class LeadController implements LeadControllerSpecs {
             @RequestParam(required = false) CustomerSegmentType segment,
             @RequestParam(required = false) LeadHealthStatus status,
             Pageable pageable) {
-        return ResponseEntity.ok(ApiSingleResponse.of(leadService.listLeads(segment, status, pageable)));
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(leadService.listLeads(segment, status, pageable, user)));
     }
 
     @Override
     @GetMapping("/{customerId}")
     public ResponseEntity<ApiSingleResponse<LeadResponseDTO>> findOne(@PathVariable UUID customerId) {
-        return ResponseEntity.ok(ApiSingleResponse.of(leadService.findById(customerId)));
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(leadService.findById(customerId, user)));
     }
 
     @Override
