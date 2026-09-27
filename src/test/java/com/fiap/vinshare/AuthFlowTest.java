@@ -6,11 +6,21 @@ import com.fiap.vinshare.support.IntegrationTest;
 import com.fiap.vinshare.support.TestData;
 import com.fiap.vinshare.support.TestFixtures;
 import org.junit.jupiter.api.Test;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Fluxo de autenticação (cadastro, login, refresh) e controle de acesso básico. */
@@ -107,5 +117,61 @@ class AuthFlowTest extends IntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andReturn();
         assertThat(json(result).get("errors")).isNotEmpty();
+    }
+
+    @Value("${security.jwt.secret}")
+    private String jwtSecret;
+
+    private int refresh(String refreshToken) throws Exception {
+        return mockMvc.perform(post("/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + refreshToken + "\"}"))
+                .andReturn().getResponse().getStatus();
+    }
+
+    @Test
+    void refreshReutilizadoRevogaTodaASessao() throws Exception {
+        Customer customer = fixtures.customer();
+        String r1 = login(customer.getUser().getEmail(), TestFixtures.PASSWORD).get("refreshToken").asText();
+
+        var rotated = mockMvc.perform(post("/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + r1 + "\"}"))
+                .andExpect(status().isOk()).andReturn();
+        String r2 = json(rotated).at("/data/refreshToken").asText();
+
+        assertThat(refresh(r1)).isEqualTo(401);   // reuso do token antigo
+        assertThat(refresh(r2)).isEqualTo(401);   // a família inteira foi revogada
+    }
+
+    @Test
+    void logoutSemAccessTokenRevogaRefresh() throws Exception {
+        Customer customer = fixtures.customer();
+        String r1 = login(customer.getUser().getEmail(), TestFixtures.PASSWORD).get("refreshToken").asText();
+
+        mockMvc.perform(post("/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + r1 + "\"}"))
+                .andExpect(status().isNoContent());
+        assertThat(refresh(r1)).isEqualTo(401);
+    }
+
+    @Test
+    void tokenAntigoSemAudienceRecebe401MasRefreshFunciona() throws Exception {
+        Customer customer = fixtures.customer();
+        String refreshToken = login(customer.getUser().getEmail(), TestFixtures.PASSWORD).get("refreshToken").asText();
+        // Simula um access token emitido antes do deploy (sem claim aud).
+        String legacy = Jwts.builder()
+                .subject(customer.getUser().getId().toString())
+                .issuer("ford-vinshare-api")
+                .issuedAt(new Date())
+                .expiration(Date.from(Instant.now().plus(Duration.ofMinutes(10))))
+                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
+                .compact();
+
+        mockMvc.perform(get("/me").header("Authorization", bearer(legacy)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("WWW-Authenticate", containsString("invalid_token")));
+        assertThat(refresh(refreshToken)).isEqualTo(200);
     }
 }

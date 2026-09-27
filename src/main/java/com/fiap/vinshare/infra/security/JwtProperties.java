@@ -19,4 +19,7 @@ public class JwtProperties {
 
     @Value("${security.jwt.issuer}")
     private String issuer;
+
+    @Value("${security.jwt.audience}")
+    private String audience;
 }

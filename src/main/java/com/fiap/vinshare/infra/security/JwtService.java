@@ -1,5 +1,6 @@
 package com.fiap.vinshare.infra.security;
 
+import java.util.UUID;
 import com.fiap.vinshare.domain.entities.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -41,8 +42,10 @@ public class JwtService {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(props.getAccessTokenMinutes() * 60L);
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(user.getId().toString())
                 .issuer(props.getIssuer())
+                .audience().add(props.getAudience()).and()
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .claim("email", user.getEmail())
@@ -59,10 +62,17 @@ public class JwtService {
         return props.getRefreshTokenDays();
     }
 
+    /**
+     * Valida assinatura, emissor, audiência e expiração. O papel usado na
+     * autorização vem do banco (JwtAuthenticationFilter), não do claim "role":
+     * mudar ou desativar um usuário tem efeito imediato.
+     */
     public Claims parse(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)
                 .requireIssuer(props.getIssuer())
+                .requireAudience(props.getAudience())
+                .clockSkewSeconds(30)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

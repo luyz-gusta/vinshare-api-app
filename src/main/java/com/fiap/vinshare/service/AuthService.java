@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import java.util.Map;
 import com.fiap.vinshare.domain.dto.auth.AuthResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.LoginRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.RefreshRequestDTO;
@@ -88,20 +89,31 @@ public class AuthService {
         return response;
     }
 
-    @Transactional
+    /**
+     * Rotaciona o refresh token. Se um token já rotacionado/revogado for
+     * reapresentado, trata como roubo e revoga toda a sessão do usuário.
+     * noRollbackFor: a revogação precisa persistir mesmo lançando 401.
+     */
+    @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResponseDTO refresh(RefreshRequestDTO request) {
         String hash = jwtService.hashRefreshToken(request.refreshToken());
         RefreshToken stored = refreshTokenRepository.findByTokenHash(hash)
                 .orElseThrow(() -> new InvalidCredentialsException("Refresh token inválido"));
+        User user = stored.getUser();
 
-        if (!stored.isActive()) {
+        if (stored.getRevokedAt() != null) {
+            refreshTokenRepository.revokeAllForUser(user, OffsetDateTime.now());
+            auditService.record(AuditService.TOKEN_REUSE_DETECTED, "users", user.getId(), Map.of());
+            log.warn("Reuso de refresh token detectado: userId={}", user.getId());
+            throw new InvalidCredentialsException("Refresh token revogado");
+        }
+        if (!stored.isActive() || !user.isActive()) {
             throw new InvalidCredentialsException("Refresh token expirado ou revogado");
         }
 
         stored.revoke();
         refreshTokenRepository.save(stored);
-
-        return buildAuthResponse(stored.getUser());
+        return buildAuthResponse(user);
     }
 
     @Transactional
