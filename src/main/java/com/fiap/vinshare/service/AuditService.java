@@ -43,6 +43,9 @@ public class AuditService {
     public static final String NOTIFICATION_SENT = "NOTIFICATION_SENT";
     public static final String TOKEN_REUSE_DETECTED = "TOKEN_REUSE_DETECTED";
     public static final String PASSWORD_CHANGED = "PASSWORD_CHANGED";
+    public static final String LOYALTY_REDEEM = "LOYALTY_REDEEM";
+    public static final String SERVICE_COMPLETED = "SERVICE_COMPLETED";
+    public static final String ODOMETER_UPDATED = "ODOMETER_UPDATED";
 
     private final AuditLogRepository auditLogRepository;
     private final ClientIpResolver clientIpResolver;

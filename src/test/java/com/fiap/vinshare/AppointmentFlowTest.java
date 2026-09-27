@@ -132,4 +132,18 @@ class AppointmentFlowTest extends IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.balance").value(35));
     }
+
+    @Test
+    void concluirComValorAcimaDoLimiteRetorna400() throws Exception {
+        Dealership d = fixtures.dealership();
+        String analystToken = fixtures.tokenFor(fixtures.analyst(d));
+        Customer c = fixtures.customer();
+        String id = createdId(create(fixtures.tokenFor(c.getUser()), fixtures.vehicle(c).getId(), d.getId(), futureSlot()));
+
+        mockMvc.perform(patch("/appointments/" + id + "/complete")
+                        .header("Authorization", bearer(analystToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"totalAmount\": 10000000.00}"))
+                .andExpect(status().isBadRequest());
+    }
 }

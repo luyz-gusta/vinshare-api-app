@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import java.util.Map;
 import com.fiap.vinshare.domain.dto.loyalty.LoyaltyBalanceDTO;
 import com.fiap.vinshare.domain.dto.loyalty.LoyaltyTransactionDTO;
 import com.fiap.vinshare.domain.dto.loyalty.RedeemRequestDTO;
@@ -41,6 +42,7 @@ public class LoyaltyService {
     private final LoyaltyTransactionRepository txRepository;
     private final RewardRepository rewardRepository;
     private final CustomerRepository customerRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public LoyaltyBalanceDTO getBalance(User user) {
@@ -79,7 +81,7 @@ public class LoyaltyService {
         if (!reward.isActive()) {
             throw new BusinessRuleException("Prêmio indisponível");
         }
-        LoyaltyAccount account = ensureAccount(customer);
+        LoyaltyAccount account = lockAccount(customer);
         int balance = account.getBalance() == null ? 0 : account.getBalance();
         if (balance < reward.getPointsCost()) {
             throw new BusinessRuleException("Saldo insuficiente para resgate");
@@ -98,8 +100,10 @@ public class LoyaltyService {
                 .build();
         tx = txRepository.save(tx);
 
-        log.info("Resgate efetuado: cliente={}, prêmio={}, voucher={}",
-                customer.getId(), reward.getId(), voucher);
+        // O código do voucher não vai para o log: é um valor resgatável.
+        log.info("Resgate efetuado: cliente={}, prêmio={}", customer.getId(), reward.getId());
+        auditService.record(AuditService.LOYALTY_REDEEM, "loyalty_accounts", account.getId(),
+                Map.of("rewardId", reward.getId().toString(), "points", reward.getPointsCost()));
 
         return RedeemResponseDTO.builder()
                 .transactionId(tx.getId())
@@ -119,7 +123,7 @@ public class LoyaltyService {
     @Transactional
     public void earnFromService(Customer customer, ServiceRecord service, int points) {
         if (points <= 0) return;
-        LoyaltyAccount account = ensureAccount(customer);
+        LoyaltyAccount account = lockAccount(customer);
         account.add(points);
         accountRepository.save(account);
 
@@ -129,6 +133,15 @@ public class LoyaltyService {
                 .points(points)
                 .sourceService(service)
                 .build());
+    }
+
+    /** Conta com lock de escrita; cria a conta se ainda não existir. */
+    private LoyaltyAccount lockAccount(Customer customer) {
+        return accountRepository.findByCustomerIdForUpdate(customer.getId())
+                .orElseGet(() -> accountRepository.save(LoyaltyAccount.builder()
+                        .customer(customer)
+                        .balance(0)
+                        .build()));
     }
 
     private LoyaltyAccount ensureAccount(Customer customer) {

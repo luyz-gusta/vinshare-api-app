@@ -1,5 +1,7 @@
 package com.fiap.vinshare.service;
 
+import java.util.Map;
+import com.fiap.vinshare.infra.errors.exceptions.BusinessValidationException;
 import com.fiap.vinshare.domain.dto.vehicle.MaintenanceAlertResponseDTO;
 import com.fiap.vinshare.domain.dto.vehicle.UpdateOdometerRequestDTO;
 import com.fiap.vinshare.domain.dto.vehicle.VehicleResponseDTO;
@@ -30,6 +32,7 @@ public class VehicleService {
     private final WarrantyRepository warrantyRepository;
     private final MaintenanceAlertRepository alertRepository;
     private final CustomerRepository customerRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<VehicleResponseDTO> listOwnedBy(User user) {
@@ -75,8 +78,15 @@ public class VehicleService {
     @Transactional
     public VehicleResponseDTO updateOdometer(UUID vehicleId, UpdateOdometerRequestDTO req, User user) {
         Vehicle v = requireOwnedVehicle(vehicleId, user);
+        int previous = v.getCurrentKm();
+        if (req.km() < previous) {
+            throw new BusinessValidationException(
+                    "A quilometragem informada (%d km) é menor que a atual (%d km).".formatted(req.km(), previous));
+        }
         v.setCurrentKm(req.km());
         vehicleRepository.save(v);
+        auditService.record(AuditService.ODOMETER_UPDATED, "vehicles", v.getId(),
+                Map.of("from", previous, "to", req.km()));
         return toDTO(v, warrantyRepository.findByVehicleId(v.getId()).orElse(null));
     }
 

@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import com.fiap.vinshare.infra.errors.exceptions.DuplicateResourceException;
 import com.fiap.vinshare.domain.dto.device.DeviceResponseDTO;
 import com.fiap.vinshare.domain.dto.device.RegisterDeviceRequestDTO;
 import com.fiap.vinshare.domain.entities.DeviceToken;
@@ -25,6 +26,11 @@ public class DeviceTokenService {
     public DeviceResponseDTO register(User user, RegisterDeviceRequestDTO request) {
         DeviceToken device = deviceTokenRepository.findByToken(request.token())
                 .map(existing -> {
+                    boolean ownedByOther = !existing.getUser().getId().equals(user.getId());
+                    if (ownedByOther && existing.getRevokedAt() == null) {
+                        // Reassociar calaria as notificações da outra conta (sequestro de token).
+                        throw new DuplicateResourceException("Token de dispositivo já registrado para outra conta");
+                    }
                     existing.setUser(user);
                     existing.setPlatform(request.platform());
                     existing.setRevokedAt(null);

@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import java.util.Map;
 import org.springframework.security.access.AccessDeniedException;
 import com.fiap.vinshare.infra.errors.exceptions.BusinessValidationException;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
@@ -53,6 +54,7 @@ public class AppointmentService {
     private final AnalystRepository analystRepository;
     private final LoyaltyService loyaltyService;
     private final InputSanitizer sanitizer;
+    private final AuditService auditService;
 
     @Transactional
     public AppointmentResponseDTO create(CreateAppointmentRequestDTO req, User user) {
@@ -185,6 +187,10 @@ public class AppointmentService {
             loyaltyService.earnFromService(appointment.getCustomer(), record, pontos);
         }
 
+        auditService.record(AuditService.SERVICE_COMPLETED, "appointments", appointment.getId(),
+                Map.of("serviceId", record.getId().toString(),
+                        "totalAmount", req.totalAmount(),
+                        "points", pontos));
         log.info("Agendamento concluído: id={}, serviço={}", appointment.getId(), record.getId());
         return toDTO(appointment);
     }
