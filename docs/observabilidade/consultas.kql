@@ -1,0 +1,62 @@
+// ============================================================================
+// VIN Share: consultas de observabilidade e segurança (Log Analytics)
+// AppServiceConsoleLogs.ResultDescription contém a linha JSON do logback (profile prod).
+// ============================================================================
+
+// 1) Eventos de segurança por tipo (24h, janelas de 5 min)
+AppServiceConsoleLogs
+| where TimeGenerated > ago(24h)
+| extend log = parse_json(ResultDescription)
+| where isnotempty(log.event)
+| summarize total = count() by evento = tostring(log.event), bin(TimeGenerated, 5m)
+| render timechart
+
+// 2) Falhas de login e bloqueios por força bruta
+AppServiceConsoleLogs
+| where TimeGenerated > ago(24h)
+| extend log = parse_json(ResultDescription)
+| where tostring(log.event) in ("LOGIN_FAILURE", "SUSPICIOUS_LOGIN")
+| summarize total = count() by evento = tostring(log.event), bin(TimeGenerated, 5m)
+| render columnchart
+
+// 3) 401/403 por rota
+AppServiceConsoleLogs
+| where TimeGenerated > ago(24h)
+| extend log = parse_json(ResultDescription)
+| where tostring(log.event) in ("AUTH_REJECTED", "ACCESS_DENIED")
+| summarize total = count() by rota = tostring(log.path), status = tostring(log.status)
+| top 20 by total
+
+// 4) Rate limit por escopo e IP de origem
+AppServiceConsoleLogs
+| where TimeGenerated > ago(24h)
+| extend log = parse_json(ResultDescription)
+| where tostring(log.event) == "RATE_LIMITED"
+| summarize total = count() by escopo = tostring(log.scope), ip = tostring(log.ip)
+| top 20 by total
+
+// 5) Reuso de refresh token (possível roubo de sessão; alerta crítico)
+AppServiceConsoleLogs
+| where TimeGenerated > ago(7d)
+| extend log = parse_json(ResultDescription)
+| where tostring(log.event) == "REFRESH_TOKEN_REUSE"
+| project TimeGenerated, correlationId = tostring(log.correlationId), userId = tostring(log.userId)
+
+// 6) Erros 5xx por rota (logs HTTP do App Service)
+AppServiceHTTPLogs
+| where TimeGenerated > ago(24h)
+| where ScStatus >= 500
+| summarize total = count() by CsUriStem, bin(TimeGenerated, 15m)
+
+// 7) Latência p95 por operação (Application Insights)
+AppRequests
+| where TimeGenerated > ago(24h)
+| summarize p95_ms = percentile(DurationMs, 95), total = count(), falhas = countif(Success == false) by Name
+| top 20 by p95_ms desc
+
+// 8) Rastrear uma requisição ponta a ponta pelo correlationId (resposta a incidente)
+AppServiceConsoleLogs
+| extend log = parse_json(ResultDescription)
+| where tostring(log.correlationId) == "COLE-AQUI-O-X-REQUEST-ID"
+| project TimeGenerated, level = tostring(log.level), logger = tostring(log.logger), message = tostring(log.message)
+| order by TimeGenerated asc
