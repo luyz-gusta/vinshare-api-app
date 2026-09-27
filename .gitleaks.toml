@@ -1,0 +1,10 @@
+title = "vinshare-api - configuração do Gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Chaves exclusivas de teste (usadas só com Testcontainers, nunca em produção)"
+paths = [
+  '''src/test/resources/application-test\.properties''',
+]
