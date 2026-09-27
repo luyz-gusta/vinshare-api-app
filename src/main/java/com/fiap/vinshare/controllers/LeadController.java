@@ -55,7 +55,7 @@ public class LeadController implements LeadControllerSpecs {
             @PathVariable UUID customerId,
             @Valid @RequestBody LeadActionRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body(ApiSingleResponse.of(leadService.triggerAction(customerId, request, user), "Ação enfileirada"));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiSingleResponse.of(leadService.triggerAction(customerId, request, user), "Ação registrada"));
     }
 }

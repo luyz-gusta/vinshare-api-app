@@ -1,5 +1,7 @@
 package com.fiap.vinshare.controllers;
 
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import java.net.URI;
 import com.fiap.vinshare.domain.dto.auth.AuthResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.LoginRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.RefreshRequestDTO;
@@ -26,8 +28,8 @@ public class AuthController implements AuthControllerSpecs {
     @PostMapping("/register")
     public ResponseEntity<ApiSingleResponse<AuthResponseDTO>> register(@RequestBody RegisterRequestDTO request) {
         AuthResponseDTO response = authService.register(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/me").build().toUri();
+        return ResponseEntity.created(location)
                 .body(ApiSingleResponse.of(response, "Cliente registrado com sucesso"));
     }
 

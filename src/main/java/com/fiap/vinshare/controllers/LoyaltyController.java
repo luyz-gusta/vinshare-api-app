@@ -1,5 +1,6 @@
 package com.fiap.vinshare.controllers;
 
+import org.springframework.http.HttpStatus;
 import com.fiap.vinshare.domain.dto.loyalty.LoyaltyBalanceDTO;
 import com.fiap.vinshare.domain.dto.loyalty.LoyaltyTransactionDTO;
 import com.fiap.vinshare.domain.dto.loyalty.RedeemRequestDTO;
@@ -58,6 +59,7 @@ public class LoyaltyController implements LoyaltyControllerSpecs {
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ApiSingleResponse<RedeemResponseDTO>> redeem(@Valid @RequestBody RedeemRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
-        return ResponseEntity.ok(ApiSingleResponse.of(loyaltyService.redeem(user, request), "Resgate efetuado"));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiSingleResponse.of(loyaltyService.redeem(user, request), "Resgate efetuado"));
     }
 }

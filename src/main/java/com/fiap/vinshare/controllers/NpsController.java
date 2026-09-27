@@ -1,5 +1,6 @@
 package com.fiap.vinshare.controllers;
 
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.fiap.vinshare.domain.dto.nps.CreateNpsRequestDTO;
 import com.fiap.vinshare.domain.dto.nps.NpsResponseDTO;
 import com.fiap.vinshare.domain.dto.nps.PendingSurveyDTO;
@@ -43,7 +44,7 @@ public class NpsController implements NpsControllerSpecs {
             @PathVariable UUID serviceId,
             @Valid @RequestBody CreateNpsRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
-        return ResponseEntity.status(HttpStatus.CREATED)
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequest().build().toUri())
                 .body(ApiSingleResponse.of(npsService.submit(serviceId, request, user), "NPS registrado"));
     }
 

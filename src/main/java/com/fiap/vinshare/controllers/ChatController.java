@@ -1,5 +1,7 @@
 package com.fiap.vinshare.controllers;
 
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import java.net.URI;
 import com.fiap.vinshare.domain.dto.chat.ChatMessageResponseDTO;
 import com.fiap.vinshare.domain.dto.chat.ChatSessionResponseDTO;
 import com.fiap.vinshare.domain.dto.chat.SendMessageRequestDTO;
@@ -34,8 +36,10 @@ public class ChatController implements ChatControllerSpecs {
     @PostMapping
     public ResponseEntity<ApiSingleResponse<ChatSessionResponseDTO>> openSession() {
         var user = SecurityUtils.requireCurrentUser();
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiSingleResponse.of(chatService.openSession(user), "Sessão aberta"));
+        ChatSessionResponseDTO session = chatService.openSession(user);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}/messages").buildAndExpand(session.sessionId()).toUri();
+        return ResponseEntity.created(location).body(ApiSingleResponse.of(session, "Sessão aberta"));
     }
 
     @Override
@@ -44,7 +48,8 @@ public class ChatController implements ChatControllerSpecs {
             @PathVariable UUID sessionId,
             @Valid @RequestBody SendMessageRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
-        return ResponseEntity.ok(ApiSingleResponse.of(chatService.sendMessage(sessionId, request, user)));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiSingleResponse.of(chatService.sendMessage(sessionId, request, user)));
     }
 
     @Override

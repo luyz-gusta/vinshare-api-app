@@ -1,5 +1,7 @@
 package com.fiap.vinshare.controllers;
 
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import java.net.URI;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
 import com.fiap.vinshare.domain.dto.appointment.CompleteAppointmentRequestDTO;
 import com.fiap.vinshare.domain.dto.appointment.CreateAppointmentRequestDTO;
@@ -35,8 +37,10 @@ public class AppointmentController implements AppointmentControllerSpecs {
     public ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> create(
             @Valid @RequestBody CreateAppointmentRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiSingleResponse.of(appointmentService.create(request, user), "Agendamento criado"));
+        AppointmentResponseDTO created = appointmentService.create(request, user);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.id()).toUri();
+        return ResponseEntity.created(location).body(ApiSingleResponse.of(created, "Agendamento criado"));
     }
 
     @Override

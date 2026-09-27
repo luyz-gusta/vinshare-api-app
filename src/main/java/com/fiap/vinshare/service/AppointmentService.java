@@ -1,5 +1,7 @@
 package com.fiap.vinshare.service;
 
+import org.springframework.security.access.AccessDeniedException;
+import com.fiap.vinshare.infra.errors.exceptions.BusinessValidationException;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
 import com.fiap.vinshare.domain.dto.appointment.CompleteAppointmentRequestDTO;
 import com.fiap.vinshare.domain.dto.appointment.CreateAppointmentRequestDTO;
@@ -66,7 +68,7 @@ public class AppointmentService {
                 .orElseThrow(() -> ResourceNotFoundException.of("Tipo de serviço", req.serviceTypeId()));
 
         if (req.scheduledAt().isBefore(OffsetDateTime.now())) {
-            throw new BusinessRuleException("Não é possível agendar em uma data passada");
+            throw new BusinessValidationException("Não é possível agendar em uma data passada");
         }
         if (appointmentRepository.existsActiveConflict(
                 dealership.getId(), req.scheduledAt(), AppointmentStatus.SCHEDULED, AppointmentStatus.CHECKED_IN)) {
@@ -194,7 +196,7 @@ public class AppointmentService {
 
     private void ensureSameDealership(Analyst analyst, Dealership dealership) {
         if (!analyst.getDealership().getId().equals(dealership.getId())) {
-            throw new BusinessRuleException("Analista não pertence à concessionária do agendamento");
+            throw new AccessDeniedException("Analista não pertence à concessionária do agendamento");
         }
     }
 

@@ -24,9 +24,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
 
     Optional<Appointment> findByIdAndCustomerId(UUID id, UUID customerId);
 
-    List<Appointment> findAllByDealershipIdAndScheduledAtBetweenAndStatusIn(
-            UUID dealershipId, OffsetDateTime from, OffsetDateTime to, List<AppointmentStatus> statuses);
-
     /**
      * Escrita explícita em vez de {@code existsBy...StatusIn(List<AppointmentStatus>)}:
      * o Hibernate não aplica o {@code @ColumnTransformer} do enum nativo do Postgres
