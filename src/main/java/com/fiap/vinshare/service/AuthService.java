@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import com.fiap.vinshare.infra.security.LoginAttemptService;
 import java.util.Map;
 import com.fiap.vinshare.domain.dto.auth.AuthResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.LoginRequestDTO;
@@ -39,6 +40,16 @@ public class AuthService {
     private final CryptoService cpfCryptoService;
     private final InputSanitizer sanitizer;
     private final AuditService auditService;
+    private final LoginAttemptService loginAttemptService;
+
+    private String dummyHash;
+
+    @jakarta.annotation.PostConstruct
+    void initDummyHash() {
+        // Hash fictício: quando o e-mail não existe, o BCrypt roda do mesmo jeito
+        // e o tempo de resposta não revela quais contas existem.
+        dummyHash = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
+    }
 
     @Transactional
     public AuthResponseDTO register(RegisterRequestDTO request) {
@@ -76,14 +87,19 @@ public class AuthService {
     @Transactional
     public AuthResponseDTO login(LoginRequestDTO request) {
         String email = request.email().toLowerCase().trim();
-        User user = userRepository.findByEmail(email).orElse(null);
+        loginAttemptService.checkAllowed(email);
 
-        if (user == null || !user.isActive()
-                || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        boolean passwordOk = passwordEncoder.matches(request.password(),
+                user != null ? user.getPasswordHash() : dummyHash);
+
+        if (user == null || !user.isActive() || !passwordOk) {
+            loginAttemptService.onFailure(email);
             auditService.loginFailure(email);
             throw new InvalidCredentialsException("E-mail ou senha inválidos");
         }
 
+        loginAttemptService.onSuccess(email);
         AuthResponseDTO response = buildAuthResponse(user);
         auditService.loginSuccess(user.getId(), user.getEmail());
         return response;

@@ -174,4 +174,21 @@ class AuthFlowTest extends IntegrationTest {
                 .andExpect(header().string("WWW-Authenticate", containsString("invalid_token")));
         assertThat(refresh(refreshToken)).isEqualTo(200);
     }
+
+    @Test
+    void bloqueiaLoginDoEmailAposCincoFalhas() throws Exception {
+        Customer customer = fixtures.customer();
+        String email = customer.getUser().getEmail();
+        String wrong = "{\"email\":\"%s\",\"password\":\"senha-errada-123\"}".formatted(email);
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(wrong))
+                    .andExpect(status().isUnauthorized());
+        }
+        // Mesmo com a senha certa, o e-mail fica bloqueado durante a janela.
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"%s\",\"password\":\"%s\"}".formatted(email, TestFixtures.PASSWORD)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"));
+    }
 }

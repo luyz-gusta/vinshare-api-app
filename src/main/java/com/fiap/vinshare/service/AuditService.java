@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import com.fiap.vinshare.infra.security.ClientIpResolver;
 import com.fiap.vinshare.domain.entities.AuditLog;
 import com.fiap.vinshare.domain.entities.User;
 import com.fiap.vinshare.infra.security.SecurityUtils;
@@ -43,6 +44,7 @@ public class AuditService {
     public static final String TOKEN_REUSE_DETECTED = "TOKEN_REUSE_DETECTED";
 
     private final AuditLogRepository auditLogRepository;
+    private final ClientIpResolver clientIpResolver;
 
     @Value("${security.audit.bulk-query-threshold:100}")
     private int bulkQueryThreshold;
@@ -125,11 +127,7 @@ public class AuditService {
     }
 
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return truncate(forwarded.split(",")[0].trim(), 45);
-        }
-        return truncate(request.getRemoteAddr(), 45);
+        return truncate(clientIpResolver.resolve(request), 45);
     }
 
     private String truncate(String value, int max) {

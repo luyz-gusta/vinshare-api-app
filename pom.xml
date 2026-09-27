@@ -90,6 +90,12 @@
             <version>${bucket4j.version}</version>
         </dependency>
 
+        <!-- Caches limitados (buckets de rate limit e tentativas de login) -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
         <!-- Logs JSON estruturados -->
         <dependency>
             <groupId>net.logstash.logback</groupId>
