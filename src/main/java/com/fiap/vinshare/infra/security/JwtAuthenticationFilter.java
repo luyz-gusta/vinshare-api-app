@@ -1,7 +1,9 @@
 package com.fiap.vinshare.infra.security;
 
+import com.fiap.vinshare.domain.entities.User;
 import com.fiap.vinshare.repositories.UserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,6 +27,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    /** Motivo da falha do token ("expired" ou "invalid"), lido pelo JsonAuthenticationEntryPoint. */
+    public static final String AUTH_ERROR_ATTRIBUTE = JwtAuthenticationFilter.class.getName() + ".error";
+
     private static final String HEADER = "Authorization";
     private static final String PREFIX = "Bearer ";
 
@@ -37,27 +42,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String header = request.getHeader(HEADER);
         if (StringUtils.hasText(header) && header.startsWith(PREFIX)) {
-            String token = header.substring(PREFIX.length());
-            try {
-                Claims claims = jwtService.parse(token);
-                UUID userId = UUID.fromString(claims.getSubject());
-                userRepository.findById(userId).ifPresent(user -> {
-                    if (user.isActive()) {
-                        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                user, null, user.getAuthorities());
-                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(auth);
-                        MDC.put("userId", user.getId().toString());
-                    }
-                });
-            } catch (JwtException | IllegalArgumentException ex) {
-                log.debug("Token inválido em {}: {}", request.getRequestURI(), ex.getMessage());
-            }
+            authenticate(header.substring(PREFIX.length()), request);
         }
         try {
             chain.doFilter(request, response);
         } finally {
             MDC.remove("userId");
+        }
+    }
+
+    private void authenticate(String token, HttpServletRequest request) {
+        try {
+            Claims claims = jwtService.parse(token);
+            UUID userId = UUID.fromString(claims.getSubject());
+            User user = userRepository.findById(userId).filter(User::isActive).orElse(null);
+            if (user == null) {
+                // Token válido de usuário removido/desativado: trata como inválido.
+                request.setAttribute(AUTH_ERROR_ATTRIBUTE, "invalid");
+                return;
+            }
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            MDC.put("userId", user.getId().toString());
+        } catch (ExpiredJwtException ex) {
+            request.setAttribute(AUTH_ERROR_ATTRIBUTE, "expired");
+        } catch (JwtException | IllegalArgumentException ex) {
+            request.setAttribute(AUTH_ERROR_ATTRIBUTE, "invalid");
+            log.debug("Token inválido em {}: {}", request.getRequestURI(), ex.getMessage());
         }
     }
 }

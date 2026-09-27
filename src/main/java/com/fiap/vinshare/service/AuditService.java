@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -82,7 +83,10 @@ public class AuditService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void leadAction(UUID customerId, String channel, String templateId) {
-        record(LEAD_ACTION, "customers", customerId, Map.of("channel", channel, "templateId", templateId));
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("channel", channel);
+        if (templateId != null) payload.put("templateId", templateId);
+        record(LEAD_ACTION, "customers", customerId, payload);
     }
 
     /**

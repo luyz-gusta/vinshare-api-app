@@ -1,5 +1,7 @@
 package com.fiap.vinshare.config;
 
+import com.fiap.vinshare.infra.security.JsonAccessDeniedHandler;
+import com.fiap.vinshare.infra.security.JsonAuthenticationEntryPoint;
 import com.fiap.vinshare.infra.security.JwtAuthenticationFilter;
 import com.fiap.vinshare.infra.security.PayloadIntegrityFilter;
 import com.fiap.vinshare.infra.security.RateLimitFilter;
@@ -47,6 +49,8 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
     private final PayloadIntegrityFilter payloadIntegrityFilter;
+    private final JsonAuthenticationEntryPoint authenticationEntryPoint;
+    private final JsonAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -70,8 +74,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(
-                                org.springframework.http.HttpStatus.UNAUTHORIZED))
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
                 .headers(headers -> headers
                         .frameOptions(f -> f.deny())
