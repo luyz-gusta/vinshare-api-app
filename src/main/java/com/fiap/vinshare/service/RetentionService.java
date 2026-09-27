@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import com.fiap.vinshare.repositories.RefreshTokenRepository;
 import com.fiap.vinshare.repositories.AuditLogRepository;
 import com.fiap.vinshare.repositories.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class RetentionService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final AuditLogRepository auditLogRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Value("${app.retention.chat-days:90}")
     private int chatDays;
@@ -50,7 +52,9 @@ public class RetentionService {
         int chatRemoved = chatMessageRepository.deleteOlderThan(chatCutoff);
         int auditRemoved = auditLogRepository.deleteOlderThan(auditCutoff);
 
-        log.info("Política de retenção aplicada: chat_messages removidas={} (>{}d), audit_log removidos={} (>{}d)",
-                chatRemoved, chatDays, auditRemoved, auditDays);
+        int tokensRemoved = refreshTokenRepository.deleteExpiredOrRevokedBefore(OffsetDateTime.now().minusDays(30));
+
+        log.info("Política de retenção aplicada: chat_messages={} (>{}d), audit_log={} (>{}d), refresh_tokens={} (>30d)",
+                chatRemoved, chatDays, auditRemoved, auditDays, tokensRemoved);
     }
 }

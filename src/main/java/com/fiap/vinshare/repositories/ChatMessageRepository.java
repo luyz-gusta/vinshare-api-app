@@ -18,6 +18,12 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
 
     List<ChatMessage> findTop20BySessionIdOrderByCreatedAtDesc(UUID sessionId);
 
+    long countBySession_User_Id(UUID userId);
+
+    @Modifying
+    @Query("DELETE FROM ChatMessage m WHERE m.session IN (SELECT s FROM ChatSession s WHERE s.user.id = :userId)")
+    int deleteAllByUserId(@Param("userId") UUID userId);
+
     /** Remove mensagens anteriores à data de corte (política de retenção, Cyber frente 4). */
     @Modifying
     @Query("delete from ChatMessage m where m.createdAt < :cutoff")

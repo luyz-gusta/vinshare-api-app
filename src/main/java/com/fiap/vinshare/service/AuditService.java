@@ -48,6 +48,8 @@ public class AuditService {
     public static final String ODOMETER_UPDATED = "ODOMETER_UPDATED";
     public static final String USER_REGISTERED = "USER_REGISTERED";
     public static final String PII_ACCESS = "PII_ACCESS";
+    public static final String DATA_EXPORTED = "DATA_EXPORTED";
+    public static final String DATA_SUBJECT_ANONYMIZED = "DATA_SUBJECT_ANONYMIZED";
 
     private final AuditLogRepository auditLogRepository;
     private final ClientIpResolver clientIpResolver;

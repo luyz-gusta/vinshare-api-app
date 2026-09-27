@@ -1,5 +1,6 @@
 package com.fiap.vinshare.specs;
 
+import com.fiap.vinshare.domain.dto.privacy.PersonalDataExportDTO;
 import com.fiap.vinshare.specs.error.ApiResponseTooManyRequests;
 import com.fiap.vinshare.specs.error.ApiResponseUnprocessableEntity;
 import com.fiap.vinshare.specs.error.ApiResponseBadRequest;
@@ -41,6 +42,13 @@ public interface MeControllerSpecs {
     @ApiResponseUnprocessableEntity
     @ApiResponseTooManyRequests
     ResponseEntity<Void> changePassword(@Valid ChangePasswordRequestDTO request);
+
+    @Operation(summary = "Exportar meus dados pessoais (LGPD art. 18)")
+    ResponseEntity<ApiSingleResponse<PersonalDataExportDTO>> exportMyData();
+
+    @Operation(summary = "Excluir minha conta (anonimização, LGPD art. 18, VI)")
+    @ApiResponse(responseCode = "204", description = "Conta anonimizada e encerrada")
+    ResponseEntity<Void> deleteMyAccount();
 
     @Operation(summary = "Veículos do cliente autenticado")
     ResponseEntity<ApiSingleResponse<List<VehicleResponseDTO>>> myVehicles();

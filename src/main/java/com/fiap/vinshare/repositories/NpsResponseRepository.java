@@ -1,5 +1,6 @@
 package com.fiap.vinshare.repositories;
 
+import org.springframework.data.jpa.repository.Modifying;
 import com.fiap.vinshare.domain.entities.NpsResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,12 @@ import java.util.UUID;
 public interface NpsResponseRepository extends JpaRepository<NpsResponse, UUID> {
 
     Optional<NpsResponse> findByServiceId(UUID serviceId);
+
+    List<NpsResponse> findAllByCustomerId(UUID customerId);
+
+    @Modifying
+    @Query("UPDATE NpsResponse n SET n.comment = NULL WHERE n.customer.id = :customerId")
+    int clearCommentsByCustomerId(@Param("customerId") UUID customerId);
 
     boolean existsByServiceId(UUID serviceId);
 

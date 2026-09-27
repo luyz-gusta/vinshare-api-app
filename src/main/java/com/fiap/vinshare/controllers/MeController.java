@@ -1,5 +1,7 @@
 package com.fiap.vinshare.controllers;
 
+import com.fiap.vinshare.service.PrivacyService;
+import com.fiap.vinshare.domain.dto.privacy.PersonalDataExportDTO;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.ChangePasswordRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.MeResponseDTO;
@@ -42,6 +44,7 @@ import java.util.UUID;
 public class MeController implements MeControllerSpecs {
 
     private final MeService meService;
+    private final PrivacyService privacyService;
     private final VehicleService vehicleService;
     private final DeviceTokenService deviceTokenService;
     private final AppointmentService appointmentService;
@@ -61,6 +64,23 @@ public class MeController implements MeControllerSpecs {
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequestDTO request) {
         var user = SecurityUtils.requireCurrentUser();
         meService.changePassword(user, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @GetMapping("/data-export")
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<ApiSingleResponse<PersonalDataExportDTO>> exportMyData() {
+        var user = SecurityUtils.requireCurrentUser();
+        return ResponseEntity.ok(ApiSingleResponse.of(privacyService.export(user)));
+    }
+
+    @Override
+    @DeleteMapping
+    @PreAuthorize("hasRole('CLIENT')")
+    public ResponseEntity<Void> deleteMyAccount() {
+        var user = SecurityUtils.requireCurrentUser();
+        privacyService.anonymize(user);
         return ResponseEntity.noContent().build();
     }
 
