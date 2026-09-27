@@ -68,13 +68,23 @@ public interface CustomerSegmentRepository extends JpaRepository<CustomerSegment
                                            @Param("dealershipId") String dealershipId,
                                            Pageable pageable);
 
-    /** Projeção plana de uma linha de {@code findLatestScoped} (ver javadoc acima). */
+    /**
+     * Projeção plana de uma linha de {@code findLatestScoped} (ver javadoc acima).
+     *
+     * {@code predictedAt} é {@code Instant}, não {@code OffsetDateTime}: o driver
+     * do Postgres devolve a coluna {@code timestamptz} como {@code Instant} pra
+     * esse mecanismo de projeção (que usa o {@code ConversionService} do Spring,
+     * não o sistema de tipos do Hibernate), e não existe conversor
+     * Instant->OffsetDateTime registrado — a chamada quebra com
+     * {@code UnsupportedOperationException} em runtime. Convertendo pra
+     * {@code OffsetDateTime} manualmente no service.
+     */
     interface LeadSegmentRow {
         UUID getId();
         UUID getCustomerId();
         java.math.BigDecimal getRiskScore();
         String getSegment();
-        java.time.OffsetDateTime getPredictedAt();
+        java.time.Instant getPredictedAt();
     }
 
     /** Conta por segmento na predição mais recente de cada cliente. */

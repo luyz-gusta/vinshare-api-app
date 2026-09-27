@@ -136,7 +136,8 @@ public class LeadService {
         Customer customer = customerRepository.findById(row.getCustomerId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Cliente", row.getCustomerId()));
         CustomerSegmentType segmentType = CustomerSegmentType.valueOf(row.getSegment());
-        return toLead(customer, segmentType, row.getRiskScore(), row.getPredictedAt());
+        java.time.OffsetDateTime predictedAt = row.getPredictedAt().atOffset(java.time.ZoneOffset.UTC);
+        return toLead(customer, segmentType, row.getRiskScore(), predictedAt);
     }
 
     private LeadResponseDTO toLead(Customer customer, CustomerSegmentType segment,
