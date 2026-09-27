@@ -20,7 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <jjwt.version>0.12.7</jjwt.version>
-        <springdoc.version>2.8.17</springdoc.version>
+        <springdoc.version>3.1.1</springdoc.version>
         <bucket4j.version>8.10.1</bucket4j.version>
         <logstash.version>8.1</logstash.version>
         <!-- Sobrescritas do BOM do Spring Boot para fechar CVEs apontadas pelo Trivy (SCA) -->
