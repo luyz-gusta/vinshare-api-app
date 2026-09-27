@@ -166,10 +166,30 @@ jobs:
           exit-code: '1'
           format: table
 
+  iac-scan:
+    name: IaC e config (Checkov)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: bicep,dockerfile,github_actions
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: checkov.sarif
+          category: checkov
+
   deploy:
     name: Deploy (Azure App Service)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [secret-scan, sast, build-test, sca, container]
+    needs: [secret-scan, sast, build-test, sca, container, iac-scan]
     runs-on: ubuntu-latest
     environment:
       name: production
