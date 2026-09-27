@@ -12,6 +12,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
-@ApiResponse(responseCode = "400", description = "Requisição inválida",
+@ApiResponse(responseCode = "422", description = "Requisição válida, mas violando uma regra de domínio",
         content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
-public @interface ApiResponseBadRequest {}
+public @interface ApiResponseUnprocessableEntity {}

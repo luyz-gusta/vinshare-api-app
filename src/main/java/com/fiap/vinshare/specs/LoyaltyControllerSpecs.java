@@ -1,5 +1,7 @@
 package com.fiap.vinshare.specs;
 
+import org.springdoc.core.annotations.ParameterObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.loyalty.LoyaltyBalanceDTO;
 import com.fiap.vinshare.domain.dto.loyalty.LoyaltyTransactionDTO;
 import com.fiap.vinshare.domain.dto.loyalty.RedeemRequestDTO;
@@ -30,12 +32,13 @@ public interface LoyaltyControllerSpecs {
     ResponseEntity<ApiSingleResponse<LoyaltyBalanceDTO>> balance();
 
     @Operation(summary = "Extrato de transações de pontos")
-    ResponseEntity<ApiSingleResponse<Page<LoyaltyTransactionDTO>>> transactions(Pageable pageable);
+    ResponseEntity<ApiSingleResponse<Page<LoyaltyTransactionDTO>>> transactions(@ParameterObject Pageable pageable);
 
     @Operation(summary = "Catálogo de prêmios disponíveis")
     ResponseEntity<ApiSingleResponse<List<RewardResponseDTO>>> rewards();
 
     @Operation(summary = "Resgatar prêmio")
+    @ApiResponse(responseCode = "201", description = "Resgate efetuado; voucher emitido")
     @ApiResponseBadRequest
     @ApiResponseNotFound
     @ApiResponseConflict

@@ -1,5 +1,7 @@
 package com.fiap.vinshare.specs;
 
+import com.fiap.vinshare.specs.error.ApiResponseUnprocessableEntity;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
 import com.fiap.vinshare.domain.dto.appointment.CompleteAppointmentRequestDTO;
 import com.fiap.vinshare.domain.dto.appointment.CreateAppointmentRequestDTO;
@@ -26,6 +28,8 @@ import java.util.UUID;
 public interface AppointmentControllerSpecs {
 
     @Operation(summary = "Criar novo agendamento")
+    @ApiResponse(responseCode = "201", description = "Agendamento criado; header Location aponta para o recurso")
+    @ApiResponseUnprocessableEntity
     @ApiResponseBadRequest
     @ApiResponseNotFound
     @ApiResponseConflict
@@ -46,10 +50,7 @@ public interface AppointmentControllerSpecs {
     @ApiResponseConflict
     ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> checkIn(@PathVariable UUID id);
 
-    @Operation(
-            summary = "Concluir agendamento e registrar serviço (analista)",
-            description = "Requer header X-Request-Signature (HMAC-SHA256 do body) por exigência da disciplina de Cybersecurity."
-    )
+    @Operation(summary = "Concluir agendamento e registrar serviço (analista da concessionária)")
     @ApiResponseBadRequest
     @ApiResponseNotFound
     @ApiResponseConflict

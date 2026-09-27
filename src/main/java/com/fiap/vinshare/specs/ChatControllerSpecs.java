@@ -1,5 +1,6 @@
 package com.fiap.vinshare.specs;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.chat.ChatMessageResponseDTO;
 import com.fiap.vinshare.domain.dto.chat.ChatSessionResponseDTO;
 import com.fiap.vinshare.domain.dto.chat.SendMessageRequestDTO;
@@ -25,9 +26,11 @@ import java.util.UUID;
 public interface ChatControllerSpecs {
 
     @Operation(summary = "Abrir sessão de chat")
+    @ApiResponse(responseCode = "201", description = "Sessão criada")
     ResponseEntity<ApiSingleResponse<ChatSessionResponseDTO>> openSession();
 
     @Operation(summary = "Enviar mensagem na sessão (rate limit de 20/min)")
+    @ApiResponse(responseCode = "201", description = "Resposta do assistente criada")
     @ApiResponseBadRequest
     @ApiResponseNotFound
     @ApiResponseTooManyRequests

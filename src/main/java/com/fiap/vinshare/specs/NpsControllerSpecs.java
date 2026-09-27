@@ -1,5 +1,6 @@
 package com.fiap.vinshare.specs;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.nps.CreateNpsRequestDTO;
 import com.fiap.vinshare.domain.dto.nps.NpsResponseDTO;
 import com.fiap.vinshare.domain.dto.nps.PendingSurveyDTO;
@@ -28,6 +29,7 @@ public interface NpsControllerSpecs {
     ResponseEntity<ApiSingleResponse<List<PendingSurveyDTO>>> listPending();
 
     @Operation(summary = "Enviar avaliação NPS para um serviço")
+    @ApiResponse(responseCode = "201", description = "Avaliação registrada")
     @ApiResponseBadRequest
     @ApiResponseNotFound
     @ApiResponseConflict

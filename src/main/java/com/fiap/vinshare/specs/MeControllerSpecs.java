@@ -1,5 +1,7 @@
 package com.fiap.vinshare.specs;
 
+import org.springdoc.core.annotations.ParameterObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.ChangePasswordRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.MeResponseDTO;
@@ -38,15 +40,17 @@ public interface MeControllerSpecs {
 
     @Operation(summary = "Histórico de serviços do cliente autenticado, opcionalmente filtrado por veículo")
     ResponseEntity<ApiSingleResponse<Page<ServiceRecordResponseDTO>>> myServices(
-            @RequestParam(required = false) UUID vehicleId, Pageable pageable);
+            @RequestParam(required = false) UUID vehicleId, @ParameterObject Pageable pageable);
 
     @Operation(summary = "Agendamentos do cliente autenticado")
     ResponseEntity<ApiSingleResponse<Page<AppointmentResponseDTO>>> myAppointments(
-            @RequestParam(required = false) AppointmentStatus status, Pageable pageable);
+            @RequestParam(required = false) AppointmentStatus status, @ParameterObject Pageable pageable);
 
     @Operation(summary = "Registra um token de push (Expo) do dispositivo")
+    @ApiResponse(responseCode = "201", description = "Dispositivo registrado")
     ResponseEntity<ApiSingleResponse<DeviceResponseDTO>> registerDevice(@Valid RegisterDeviceRequestDTO request);
 
     @Operation(summary = "Remove (revoga) um token de push do dispositivo")
+    @ApiResponse(responseCode = "204", description = "Dispositivo removido")
     ResponseEntity<Void> removeDevice(String token);
 }

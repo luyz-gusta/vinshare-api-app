@@ -1,5 +1,7 @@
 package com.fiap.vinshare.specs;
 
+import org.springdoc.core.annotations.ParameterObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.lead.LeadActionRequestDTO;
 import com.fiap.vinshare.domain.dto.lead.LeadActionResponseDTO;
 import com.fiap.vinshare.domain.dto.lead.LeadResponseDTO;
@@ -33,16 +35,14 @@ public interface LeadControllerSpecs {
     ResponseEntity<ApiSingleResponse<Page<LeadResponseDTO>>> list(
             @RequestParam(required = false) CustomerSegmentType segment,
             @RequestParam(required = false) LeadHealthStatus status,
-            Pageable pageable);
+            @ParameterObject Pageable pageable);
 
     @Operation(summary = "Detalhe do lead (segmento atual do cliente)")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<LeadResponseDTO>> findOne(@PathVariable UUID customerId);
 
-    @Operation(
-            summary = "Disparar ação de lead",
-            description = "Requer X-Request-Signature (HMAC) para integridade do payload (Cyber, frente 3)."
-    )
+    @Operation(summary = "Registrar ação de contato com o lead (analista da concessionária de relacionamento)")
+    @ApiResponse(responseCode = "201", description = "Ação registrada")
     @ApiResponseBadRequest
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<LeadActionResponseDTO>> triggerAction(

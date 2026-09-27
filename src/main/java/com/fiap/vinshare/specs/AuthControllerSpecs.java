@@ -1,5 +1,6 @@
 package com.fiap.vinshare.specs;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.auth.AuthResponseDTO;
 import com.fiap.vinshare.domain.dto.auth.LoginRequestDTO;
 import com.fiap.vinshare.domain.dto.auth.RefreshRequestDTO;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface AuthControllerSpecs {
 
     @Operation(summary = "Registrar novo cliente")
+    @ApiResponse(responseCode = "201", description = "Cliente criado; header Location aponta para /me")
     @ApiResponseBadRequest
     @ApiResponseConflict
     ResponseEntity<ApiSingleResponse<AuthResponseDTO>> register(@Valid @RequestBody RegisterRequestDTO request);
@@ -38,7 +40,8 @@ public interface AuthControllerSpecs {
     @ApiResponseUnauthorized
     ResponseEntity<ApiSingleResponse<AuthResponseDTO>> refresh(@Valid @RequestBody RefreshRequestDTO request);
 
-    @Operation(summary = "Logout e revogação do refresh token")
+    @Operation(summary = "Logout: revoga o refresh token (não exige access token)")
+    @ApiResponse(responseCode = "204", description = "Refresh token revogado")
     @ApiResponseBadRequest
     ResponseEntity<Void> logout(@Valid @RequestBody RefreshRequestDTO request);
 }

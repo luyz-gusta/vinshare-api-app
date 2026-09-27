@@ -1,5 +1,6 @@
 package com.fiap.vinshare.specs;
 
+import org.springdoc.core.annotations.ParameterObject;
 import com.fiap.vinshare.domain.dto.segment.CustomerSegmentDTO;
 import com.fiap.vinshare.domain.dto.segment.SegmentCustomerDTO;
 import com.fiap.vinshare.domain.dto.segment.SegmentDistributionResponseDTO;
@@ -29,7 +30,7 @@ public interface SegmentControllerSpecs {
 
     @Operation(summary = "Clientes do segmento informado (lista navegável com nome, CPF mascarado, última visita e LTV estimado)")
     ResponseEntity<ApiSingleResponse<Page<SegmentCustomerDTO>>> bySegment(
-            @PathVariable CustomerSegmentType segment, Pageable pageable);
+            @PathVariable CustomerSegmentType segment, @ParameterObject Pageable pageable);
 
     @Operation(summary = "Segmento atual de um cliente")
     @ApiResponseNotFound
