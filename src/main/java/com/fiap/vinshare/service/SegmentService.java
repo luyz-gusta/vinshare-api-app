@@ -12,7 +12,9 @@ import com.fiap.vinshare.domain.entities.CustomerSegmentType;
 import com.fiap.vinshare.domain.entities.ServiceRecord;
 import com.fiap.vinshare.domain.entities.Vehicle;
 import com.fiap.vinshare.infra.errors.exceptions.ResourceNotFoundException;
+import com.fiap.vinshare.repositories.CustomerRepository;
 import com.fiap.vinshare.repositories.CustomerSegmentRepository;
+import com.fiap.vinshare.repositories.CustomerSegmentRepository.LeadSegmentRow;
 import com.fiap.vinshare.repositories.ServiceRecordRepository;
 import com.fiap.vinshare.repositories.VehicleRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ import java.util.UUID;
 public class SegmentService {
 
     private final CustomerSegmentRepository segmentRepository;
+    private final CustomerRepository customerRepository;
     private final VehicleRepository vehicleRepository;
     private final ServiceRecordRepository serviceRecordRepository;
     private final AuditService auditService;
@@ -96,8 +99,9 @@ public class SegmentService {
         return result;
     }
 
-    private SegmentCustomerDTO toSegmentCustomer(CustomerSegment seg) {
-        Customer c = seg.getCustomer();
+    private SegmentCustomerDTO toSegmentCustomer(LeadSegmentRow row) {
+        Customer c = customerRepository.findById(row.getCustomerId())
+                .orElseThrow(() -> ResourceNotFoundException.of("Cliente", row.getCustomerId()));
         List<Vehicle> vehicles = vehicleRepository.findAllByCustomerId(c.getId());
 
         List<ServiceRecord> services = vehicles.stream()
@@ -120,8 +124,8 @@ public class SegmentService {
                 .customerId(c.getId())
                 .name(c.getFullName())
                 .cpfMasked(c.getCpfMasked())
-                .segment(seg.getSegment())
-                .riskScore(seg.getRiskScore())
+                .segment(CustomerSegmentType.valueOf(row.getSegment()))
+                .riskScore(row.getRiskScore())
                 .lastVisitAt(lastVisit)
                 .estimatedLtv(estimatedLtv)
                 .build();

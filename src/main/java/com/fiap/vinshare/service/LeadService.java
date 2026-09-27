@@ -20,6 +20,7 @@ import com.fiap.vinshare.infra.security.InputSanitizer;
 import com.fiap.vinshare.repositories.AnalystRepository;
 import com.fiap.vinshare.repositories.CustomerRepository;
 import com.fiap.vinshare.repositories.CustomerSegmentRepository;
+import com.fiap.vinshare.repositories.CustomerSegmentRepository.LeadSegmentRow;
 import com.fiap.vinshare.repositories.LeadActionRepository;
 import com.fiap.vinshare.repositories.NpsResponseRepository;
 import com.fiap.vinshare.repositories.ServiceRecordRepository;
@@ -128,7 +129,19 @@ public class LeadService {
 
     private LeadResponseDTO toLead(CustomerSegment seg) {
         Customer customer = seg.getCustomer();
+        return toLead(customer, seg.getSegment(), seg.getRiskScore(), seg.getPredictedAt());
+    }
 
+    private LeadResponseDTO toLead(LeadSegmentRow row) {
+        Customer customer = customerRepository.findById(row.getCustomerId())
+                .orElseThrow(() -> ResourceNotFoundException.of("Cliente", row.getCustomerId()));
+        CustomerSegmentType segmentType = CustomerSegmentType.valueOf(row.getSegment());
+        java.time.OffsetDateTime predictedAt = row.getPredictedAt().atOffset(java.time.ZoneOffset.UTC);
+        return toLead(customer, segmentType, row.getRiskScore(), predictedAt);
+    }
+
+    private LeadResponseDTO toLead(Customer customer, CustomerSegmentType segment,
+                                    BigDecimal riskScore, java.time.OffsetDateTime predictedAt) {
         Vehicle firstVehicle = vehicleRepository.findAllByCustomerId(customer.getId()).stream()
                 .findFirst().orElse(null);
 
@@ -166,19 +179,19 @@ public class LeadService {
                 .vehiclePlate(vehiclePlate)
                 .lastVisitAt(lastVisit)
                 .daysSinceLastVisit(daysSinceLastVisit)
-                .segment(seg.getSegment())
-                .status(LeadHealthStatus.fromRiskScore(seg.getRiskScore()))
-                .riskScore(seg.getRiskScore())
+                .segment(segment)
+                .status(LeadHealthStatus.fromRiskScore(riskScore))
+                .riskScore(riskScore)
                 .warrantyStatus(warrantyStatus)
                 .lastNpsScore(lastNpsScore)
-                .reason(suggestReason(seg))
-                .suggestedAction(suggestAction(seg.getSegment()))
-                .updatedAt(seg.getPredictedAt())
+                .reason(suggestReason(segment))
+                .suggestedAction(suggestAction(segment))
+                .updatedAt(predictedAt)
                 .build();
     }
 
-    private String suggestReason(CustomerSegment seg) {
-        return switch (seg.getSegment()) {
+    private String suggestReason(CustomerSegmentType segment) {
+        return switch (segment) {
             case ABANDONO -> "Cliente fora da rede há mais de 12 meses";
             case ESQUECIDO -> "Cliente atrasou janela de revisão";
             case ECONOMICO -> "Cliente sensível a preço";
