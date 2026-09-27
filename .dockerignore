@@ -1,0 +1,10 @@
+target/
+.git/
+.github/
+.idea/
+.azure/
+.superpowers/
+.env
+.env.*
+*.log
+iot/certs/out/
