@@ -34,3 +34,6 @@ build/
 
 # Test reports
 test-output/
+
+# Laboratório IoT: certificados e chaves gerados localmente
+iot/certs/out/

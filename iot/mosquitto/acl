@@ -1,0 +1,6 @@
+# Cada veículo (CN do certificado = VIN) só publica a PRÓPRIA telemetria.
+pattern write vehicles/%u/telemetry
+
+# O serviço de ingestão lê a telemetria de toda a frota e não publica nada.
+user ingestor
+topic read vehicles/+/telemetry
