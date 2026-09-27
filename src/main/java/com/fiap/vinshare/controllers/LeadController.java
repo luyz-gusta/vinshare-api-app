@@ -51,6 +51,7 @@ public class LeadController implements LeadControllerSpecs {
 
     @Override
     @PostMapping("/{customerId}/actions")
+    @PreAuthorize("hasRole('ANALYST')")
     public ResponseEntity<ApiSingleResponse<LeadActionResponseDTO>> triggerAction(
             @PathVariable UUID customerId,
             @Valid @RequestBody LeadActionRequestDTO request) {

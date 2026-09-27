@@ -66,6 +66,7 @@ public class LoyaltyService {
                         .name(r.getName())
                         .description(r.getDescription())
                         .pointsCost(r.getPointsCost())
+                        .active(r.isActive())
                         .build())
                 .toList();
     }

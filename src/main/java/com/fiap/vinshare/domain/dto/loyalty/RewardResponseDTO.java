@@ -9,5 +9,6 @@ public record RewardResponseDTO(
         UUID id,
         String name,
         String description,
-        int pointsCost
+        int pointsCost,
+        boolean active
 ) {}

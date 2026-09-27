@@ -61,7 +61,7 @@ public class AppointmentController implements AppointmentControllerSpecs {
 
     @Override
     @PatchMapping("/{id}/check-in")
-    @PreAuthorize("hasAnyRole('ANALYST','ADMIN')")
+    @PreAuthorize("hasRole('ANALYST')")
     public ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> checkIn(@PathVariable UUID id) {
         var user = SecurityUtils.requireCurrentUser();
         return ResponseEntity.ok(ApiSingleResponse.of(appointmentService.checkIn(id, user)));
@@ -69,7 +69,7 @@ public class AppointmentController implements AppointmentControllerSpecs {
 
     @Override
     @PatchMapping("/{id}/complete")
-    @PreAuthorize("hasAnyRole('ANALYST','ADMIN')")
+    @PreAuthorize("hasRole('ANALYST')")
     public ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> complete(
             @PathVariable UUID id,
             @Valid @RequestBody CompleteAppointmentRequestDTO request) {
