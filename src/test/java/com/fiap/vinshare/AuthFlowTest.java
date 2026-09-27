@@ -1,127 +1,111 @@
 package com.fiap.vinshare;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
+import com.fiap.vinshare.domain.entities.Customer;
+import com.fiap.vinshare.support.IntegrationTest;
+import com.fiap.vinshare.support.TestData;
+import com.fiap.vinshare.support.TestFixtures;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Teste de integração do fluxo de autenticação e do controle de acesso por papel.
- * Sobe um PostgreSQL real via Testcontainers e aplica as migrations Flyway.
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers(disabledWithoutDocker = true)
-@ActiveProfiles("test")
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class AuthFlowTest {
+/** Fluxo de autenticação (cadastro, login, refresh) e controle de acesso básico. */
+class AuthFlowTest extends IntegrationTest {
 
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
-
-    @DynamicPropertySource
-    static void datasourceProps(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
+    private String registerBody(String email, String cpf) {
+        return """
+                {"fullName":"Cliente Teste","email":"%s","password":"%s",
+                 "cpf":"%s","phone":"+5511999998888","lgpdConsent":true}
+                """.formatted(email, TestFixtures.PASSWORD, cpf);
     }
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private static String accessToken;
-    private static String refreshToken;
-
-    private static final String REGISTER_BODY = """
-            {
-              "fullName": "Cliente Teste",
-              "email": "test.client@email.com",
-              "password": "senha12345",
-              "cpf": "39053344705",
-              "phone": "+5511999998888",
-              "lgpdConsent": true
-            }
-            """;
-
-    private static final String LOGIN_BODY = """
-            {"email": "test.client@email.com", "password": "senha12345"}
-            """;
-
-    @Test
-    @Order(1)
-    void registraCliente() throws Exception {
-        MvcResult result = mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON).content(REGISTER_BODY))
-                .andExpect(status().is2xxSuccessful())
-                .andReturn();
-        JsonNode data = objectMapper.readTree(result.getResponse().getContentAsString()).get("data");
-        assertThat(data.get("accessToken").asText()).isNotBlank();
-    }
-
-    @Test
-    @Order(2)
-    void loginRetornaTokens() throws Exception {
-        MvcResult result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON).content(LOGIN_BODY))
+    private JsonNode login(String email, String password) throws Exception {
+        var result = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"%s\",\"password\":\"%s\"}".formatted(email, password)))
                 .andExpect(status().isOk())
                 .andReturn();
-        JsonNode data = objectMapper.readTree(result.getResponse().getContentAsString()).get("data");
-        accessToken = data.get("accessToken").asText();
-        refreshToken = data.get("refreshToken").asText();
-        assertThat(accessToken).isNotBlank();
-        assertThat(refreshToken).isNotBlank();
+        return json(result).get("data");
+    }
+
+    @Test
+    void cadastroDeClienteRetorna201ComTokens() throws Exception {
+        var result = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody(TestData.uniqueEmail("novo"), TestData.randomCpf())))
+                .andExpect(status().isCreated())
+                .andReturn();
+        assertThat(json(result).at("/data/accessToken").asText()).isNotBlank();
+    }
+
+    @Test
+    void loginRetornaTokensEPapel() throws Exception {
+        Customer customer = fixtures.customer();
+        JsonNode data = login(customer.getUser().getEmail(), TestFixtures.PASSWORD);
+        assertThat(data.get("accessToken").asText()).isNotBlank();
+        assertThat(data.get("refreshToken").asText()).isNotBlank();
         assertThat(data.get("role").asText()).isEqualTo("CLIENT");
     }
 
     @Test
-    @Order(3)
-    void meComTokenRetornaUsuario() throws Exception {
-        mockMvc.perform(get("/me").header("Authorization", "Bearer " + accessToken))
+    void meComTokenRetorna200() throws Exception {
+        Customer customer = fixtures.customer();
+        mockMvc.perform(get("/me").header("Authorization", bearer(fixtures.tokenFor(customer.getUser()))))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @Order(4)
     void meSemTokenRetorna401() throws Exception {
-        mockMvc.perform(get("/me"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/me")).andExpect(status().isUnauthorized());
     }
 
     @Test
-    @Order(5)
     void clienteEmEndpointDeAnalistaRetorna403() throws Exception {
-        mockMvc.perform(get("/analytics/kpis").header("Authorization", "Bearer " + accessToken))
+        Customer customer = fixtures.customer();
+        mockMvc.perform(get("/analytics/kpis").header("Authorization", bearer(fixtures.tokenFor(customer.getUser()))))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @Order(6)
     void refreshGeraNovoAccessToken() throws Exception {
-        String body = "{\"refreshToken\": \"" + refreshToken + "\"}";
+        Customer customer = fixtures.customer();
+        String refresh = login(customer.getUser().getEmail(), TestFixtures.PASSWORD).get("refreshToken").asText();
         mockMvc.perform(post("/auth/refresh")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"" + refresh + "\"}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void loginComSenhaErradaRetorna401() throws Exception {
+        Customer customer = fixtures.customer();
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"%s\",\"password\":\"senha-errada-123\"}"
+                                .formatted(customer.getUser().getEmail())))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void cadastroComEmailDuplicadoRetorna409() throws Exception {
+        Customer customer = fixtures.customer();
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody(customer.getUser().getEmail(), TestData.randomCpf())))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void cadastroComCamposInvalidosRetorna400ComListaDeErros() throws Exception {
+        var result = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"fullName\":\"\",\"email\":\"nao-e-email\",\"password\":\"123\",\"cpf\":\"abc\"}"))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        assertThat(json(result).get("errors")).isNotEmpty();
     }
 }
