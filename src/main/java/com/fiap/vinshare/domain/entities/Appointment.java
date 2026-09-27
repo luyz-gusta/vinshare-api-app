@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -45,6 +47,7 @@ public class Appointment {
     private OffsetDateTime scheduledAt;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @ColumnTransformer(write = "?::appointment_status")
     @Column(name = "status", nullable = false, columnDefinition = "appointment_status")
     @Builder.Default

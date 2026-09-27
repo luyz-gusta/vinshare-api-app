@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -37,6 +39,7 @@ public class LeadAction {
     private Analyst analyst;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @ColumnTransformer(write = "?::lead_channel")
     @Column(name = "channel", nullable = false, columnDefinition = "lead_channel")
     private LeadChannel channel;
@@ -45,6 +48,7 @@ public class LeadAction {
     private String templateId;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @ColumnTransformer(write = "?::lead_status")
     @Column(name = "status", nullable = false, columnDefinition = "lead_status")
     @Builder.Default

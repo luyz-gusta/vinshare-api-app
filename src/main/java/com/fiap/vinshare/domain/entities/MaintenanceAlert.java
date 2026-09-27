@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -31,6 +33,7 @@ public class MaintenanceAlert {
     private Vehicle vehicle;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @ColumnTransformer(write = "?::maintenance_alert_type")
     @Column(name = "type", nullable = false, columnDefinition = "maintenance_alert_type")
     private MaintenanceAlertType type;

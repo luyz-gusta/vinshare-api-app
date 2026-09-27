@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -30,6 +32,7 @@ public class LoyaltyTransaction {
     private LoyaltyAccount account;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @ColumnTransformer(write = "?::loyalty_transaction_type")
     @Column(name = "type", nullable = false, columnDefinition = "loyalty_transaction_type")
     private LoyaltyTransactionType type;
