@@ -1,5 +1,6 @@
 package com.fiap.vinshare.infra.errors;
 
+import lombok.RequiredArgsConstructor;
 import com.fiap.vinshare.infra.errors.exceptions.BusinessRuleException;
 import com.fiap.vinshare.infra.errors.exceptions.BusinessValidationException;
 import com.fiap.vinshare.infra.errors.exceptions.DuplicateResourceException;
@@ -39,7 +40,10 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final com.fiap.vinshare.infra.security.SecurityEvents securityEvents;
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
@@ -97,7 +101,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
-        log.warn("403 em {} {}", req.getMethod(), req.getRequestURI());
+        securityEvents.rejected(req, 403, "regra de método");
         return respond(HttpStatus.FORBIDDEN, "Acesso negado",
                 "Você não tem permissão para acessar este recurso.", req);
     }

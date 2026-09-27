@@ -46,6 +46,8 @@ public class AuditService {
     public static final String LOYALTY_REDEEM = "LOYALTY_REDEEM";
     public static final String SERVICE_COMPLETED = "SERVICE_COMPLETED";
     public static final String ODOMETER_UPDATED = "ODOMETER_UPDATED";
+    public static final String USER_REGISTERED = "USER_REGISTERED";
+    public static final String PII_ACCESS = "PII_ACCESS";
 
     private final AuditLogRepository auditLogRepository;
     private final ClientIpResolver clientIpResolver;

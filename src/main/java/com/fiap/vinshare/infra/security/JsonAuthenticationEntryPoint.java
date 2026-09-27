@@ -4,7 +4,6 @@ import com.fiap.vinshare.infra.errors.ProblemDetailsWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
@@ -17,12 +16,12 @@ import java.io.IOException;
  * 401 em ProblemDetail com o desafio WWW-Authenticate da RFC 6750, para o
  * cliente saber se deve renovar o token (expirado) ou refazer o login.
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ProblemDetailsWriter writer;
+    private final SecurityEvents securityEvents;
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
@@ -40,8 +39,7 @@ public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
             detail = "Autenticação obrigatória. Envie o header Authorization: Bearer <token>.";
             challenge = "Bearer";
         }
-        log.warn("401 em {} {} ({})", request.getMethod(), request.getRequestURI(),
-                error == null ? "sem token" : error);
+        securityEvents.rejected(request, 401, error == null ? "sem token" : error.toString());
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, challenge);
         writer.write(request, response, HttpStatus.UNAUTHORIZED, "Não autenticado", detail);
     }

@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import com.fiap.vinshare.infra.security.SecurityEvents;
 import com.fiap.vinshare.infra.security.LoginAttemptService;
 import java.util.Map;
 import com.fiap.vinshare.domain.dto.auth.AuthResponseDTO;
@@ -41,6 +42,7 @@ public class AuthService {
     private final InputSanitizer sanitizer;
     private final AuditService auditService;
     private final LoginAttemptService loginAttemptService;
+    private final SecurityEvents securityEvents;
 
     private String dummyHash;
 
@@ -80,6 +82,7 @@ public class AuthService {
                 .build();
         customerRepository.save(customer);
 
+        auditService.record(AuditService.USER_REGISTERED, "users", user.getId(), Map.of("role", "CLIENT"));
         log.info("Novo cliente registrado: userId={}", user.getId());
         return buildAuthResponse(user);
     }
@@ -96,10 +99,12 @@ public class AuthService {
         if (user == null || !user.isActive() || !passwordOk) {
             loginAttemptService.onFailure(email);
             auditService.loginFailure(email);
+            securityEvents.loginFailed();
             throw new InvalidCredentialsException("E-mail ou senha inválidos");
         }
 
         loginAttemptService.onSuccess(email);
+        securityEvents.loginSucceeded();
         AuthResponseDTO response = buildAuthResponse(user);
         auditService.loginSuccess(user.getId(), user.getEmail());
         return response;
@@ -120,7 +125,7 @@ public class AuthService {
         if (stored.getRevokedAt() != null) {
             refreshTokenRepository.revokeAllForUser(user, OffsetDateTime.now());
             auditService.record(AuditService.TOKEN_REUSE_DETECTED, "users", user.getId(), Map.of());
-            log.warn("Reuso de refresh token detectado: userId={}", user.getId());
+            securityEvents.refreshTokenReuse();
             throw new InvalidCredentialsException("Refresh token revogado");
         }
         if (!stored.isActive() || !user.isActive()) {

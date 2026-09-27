@@ -10,7 +10,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -26,12 +25,12 @@ import java.util.concurrent.TimeUnit;
  * Buckets ficam num cache limitado com expiração, para que IPs forjados ou
  * muito variados não esgotem a memória.
  */
-@Slf4j
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final ClientIpResolver ipResolver;
     private final ProblemDetailsWriter problemWriter;
+    private final SecurityEvents securityEvents;
     private final Cache<String, Bucket> buckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(15))
             .maximumSize(100_000)
@@ -56,9 +55,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${security.rate-limit.chat-refill-minutes}")
     private int chatRefillMinutes;
 
-    public RateLimitFilter(ClientIpResolver ipResolver, ProblemDetailsWriter problemWriter) {
+    public RateLimitFilter(ClientIpResolver ipResolver, ProblemDetailsWriter problemWriter,
+                           SecurityEvents securityEvents) {
         this.ipResolver = ipResolver;
         this.problemWriter = problemWriter;
+        this.securityEvents = securityEvents;
     }
 
     @Override
@@ -77,7 +78,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         long retryAfter = Math.max(1, TimeUnit.NANOSECONDS.toSeconds(probe.getNanosToWaitForRefill()));
-        log.warn("Rate limit excedido: escopo={} ip={} path={}", scope, ip, request.getRequestURI());
+        securityEvents.rateLimited(request, scope, ip);
         response.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfter));
         problemWriter.write(request, response, HttpStatus.TOO_MANY_REQUESTS, "Muitas requisições",
                 "Limite de requisições excedido. Aguarde %d segundos.".formatted(retryAfter));

@@ -1,5 +1,6 @@
 package com.fiap.vinshare.service;
 
+import java.util.Map;
 import com.fiap.vinshare.domain.entities.User;
 import com.fiap.vinshare.domain.dto.customer.Customer360DTO;
 import com.fiap.vinshare.domain.dto.customer.TimelineEventDTO;
@@ -44,12 +45,14 @@ public class Customer360Service {
     private final CustomerSegmentRepository segmentRepository;
     private final CryptoService cryptoService;
     private final CustomerAccessPolicy accessPolicy;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public Customer360DTO get360(UUID customerId, User user) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Cliente", customerId));
         accessPolicy.checkAccess(user, customer);
+        auditService.record(AuditService.PII_ACCESS, "customers", customer.getId(), Map.of("view", "360"));
 
         Vehicle vehicle = vehicleRepository.findAllByCustomerId(customer.getId()).stream()
                 .findFirst().orElse(null);
@@ -116,6 +119,7 @@ public class Customer360Service {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Cliente", customerId));
         accessPolicy.checkAccess(user, customer);
+        auditService.record(AuditService.PII_ACCESS, "customers", customer.getId(), Map.of("view", "timeline"));
 
         List<TimelineEventDTO> events = new ArrayList<>();
         List<Vehicle> vehicles = vehicleRepository.findAllByCustomerId(customer.getId());

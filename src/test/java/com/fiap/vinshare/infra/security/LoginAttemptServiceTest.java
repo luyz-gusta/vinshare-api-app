@@ -20,7 +20,7 @@ class LoginAttemptServiceTest {
     @BeforeEach
     void setUp() {
         audit = mock(AuditService.class);
-        service = new LoginAttemptService(3, 10, audit);
+        service = new LoginAttemptService(3, 10, audit, mock(SecurityEvents.class));
     }
 
     @Test

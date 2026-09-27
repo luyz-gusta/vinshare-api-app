@@ -22,14 +22,17 @@ public class LoginAttemptService {
     private final int threshold;
     private final Duration window;
     private final AuditService auditService;
+    private final SecurityEvents securityEvents;
     private final Cache<String, AtomicInteger> failures;
 
     public LoginAttemptService(@Value("${security.audit.login-failure-threshold:5}") int threshold,
                                @Value("${security.audit.login-failure-window-minutes:10}") int windowMinutes,
-                               AuditService auditService) {
+                               AuditService auditService,
+                               SecurityEvents securityEvents) {
         this.threshold = threshold;
         this.window = Duration.ofMinutes(windowMinutes);
         this.auditService = auditService;
+        this.securityEvents = securityEvents;
         this.failures = Caffeine.newBuilder()
                 .expireAfterWrite(window)
                 .maximumSize(100_000)
@@ -39,6 +42,7 @@ public class LoginAttemptService {
     public void checkAllowed(String email) {
         AtomicInteger count = failures.getIfPresent(email);
         if (count != null && count.get() >= threshold) {
+            securityEvents.loginBlocked();
             throw new TooManyRequestsException(
                     "Muitas tentativas de login para esta conta. Tente novamente mais tarde.", window.toSeconds());
         }
