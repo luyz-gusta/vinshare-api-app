@@ -5,6 +5,7 @@ import com.fiap.vinshare.infra.responses.details.ApiSingleResponse;
 import com.fiap.vinshare.specs.error.ApiResponseInternalServerError;
 import com.fiap.vinshare.specs.error.ApiResponseUnauthorized;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 
@@ -16,5 +17,6 @@ import java.util.List;
 public interface ServiceTypeControllerSpecs {
 
     @Operation(summary = "Listar tipos de serviço")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<List<ServiceTypeResponseDTO>>> list();
 }

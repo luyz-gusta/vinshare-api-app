@@ -32,12 +32,14 @@ import java.util.UUID;
 public interface LeadControllerSpecs {
 
     @Operation(summary = "Listar leads (por padrão, segmentos em risco). Aceita filtros por segmento e/ou status derivado do riskScore.")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<Page<LeadResponseDTO>>> list(
             @RequestParam(required = false) CustomerSegmentType segment,
             @RequestParam(required = false) LeadHealthStatus status,
             @ParameterObject Pageable pageable);
 
     @Operation(summary = "Detalhe do lead (segmento atual do cliente)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<LeadResponseDTO>> findOne(@PathVariable UUID customerId);
 

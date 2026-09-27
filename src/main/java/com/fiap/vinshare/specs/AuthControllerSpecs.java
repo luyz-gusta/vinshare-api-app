@@ -30,12 +30,14 @@ public interface AuthControllerSpecs {
     ResponseEntity<ApiSingleResponse<AuthResponseDTO>> register(@Valid @RequestBody RegisterRequestDTO request);
 
     @Operation(summary = "Autenticar usuário")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseBadRequest
     @ApiResponseUnauthorized
     @ApiResponseTooManyRequests
     ResponseEntity<ApiSingleResponse<AuthResponseDTO>> login(@Valid @RequestBody LoginRequestDTO request);
 
     @Operation(summary = "Renovar access token (rotaciona o refresh)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseBadRequest
     @ApiResponseUnauthorized
     ResponseEntity<ApiSingleResponse<AuthResponseDTO>> refresh(@Valid @RequestBody RefreshRequestDTO request);

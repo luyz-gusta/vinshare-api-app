@@ -24,6 +24,7 @@ import java.util.UUID;
 public interface RewardControllerSpecs {
 
     @Operation(summary = "Detalhe de um prêmio")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<RewardResponseDTO>> findById(@PathVariable UUID id);
 
@@ -34,6 +35,7 @@ public interface RewardControllerSpecs {
     ResponseEntity<ApiSingleResponse<RewardResponseDTO>> create(@Valid @RequestBody RewardRequestDTO request);
 
     @Operation(summary = "Atualizar prêmio (ADMIN)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseBadRequest
     @ApiResponseForbidden
     @ApiResponseNotFound

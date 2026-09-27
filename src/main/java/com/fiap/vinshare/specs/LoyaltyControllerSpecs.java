@@ -29,12 +29,15 @@ import java.util.List;
 public interface LoyaltyControllerSpecs {
 
     @Operation(summary = "Saldo de pontos do cliente autenticado")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<LoyaltyBalanceDTO>> balance();
 
     @Operation(summary = "Extrato de transações de pontos")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<Page<LoyaltyTransactionDTO>>> transactions(@ParameterObject Pageable pageable);
 
     @Operation(summary = "Catálogo de prêmios disponíveis")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<List<RewardResponseDTO>>> rewards();
 
     @Operation(summary = "Resgatar prêmio")

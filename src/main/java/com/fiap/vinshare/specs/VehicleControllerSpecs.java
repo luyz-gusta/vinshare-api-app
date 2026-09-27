@@ -11,6 +11,7 @@ import com.fiap.vinshare.specs.error.ApiResponseInternalServerError;
 import com.fiap.vinshare.specs.error.ApiResponseNotFound;
 import com.fiap.vinshare.specs.error.ApiResponseUnauthorized;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -28,12 +29,15 @@ import java.util.UUID;
 public interface VehicleControllerSpecs {
 
     @Operation(summary = "Status da garantia de um veículo")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<WarrantyResponseDTO>> warranty(@PathVariable UUID vehicleId);
 
     @Operation(summary = "Alertas de manutenção ativos do veículo")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<List<MaintenanceAlertResponseDTO>>> alerts(@PathVariable UUID vehicleId);
 
     @Operation(summary = "Atualizar quilometragem informada pelo cliente")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseBadRequest
     ResponseEntity<ApiSingleResponse<VehicleResponseDTO>> updateOdometer(
             @PathVariable UUID vehicleId, @Valid @RequestBody UpdateOdometerRequestDTO request);

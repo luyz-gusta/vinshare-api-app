@@ -26,6 +26,7 @@ import java.util.UUID;
 public interface NpsControllerSpecs {
 
     @Operation(summary = "Listar pesquisas pendentes do cliente")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<List<PendingSurveyDTO>>> listPending();
 
     @Operation(summary = "Enviar avaliação NPS para um serviço")
@@ -38,6 +39,7 @@ public interface NpsControllerSpecs {
             @Valid @RequestBody CreateNpsRequestDTO request);
 
     @Operation(summary = "Consultar NPS de um serviço")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<NpsResponseDTO>> getByServiceId(@PathVariable UUID serviceId);
 }

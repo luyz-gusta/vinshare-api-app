@@ -8,6 +8,7 @@ import com.fiap.vinshare.specs.error.ApiResponseInternalServerError;
 import com.fiap.vinshare.specs.error.ApiResponseNotFound;
 import com.fiap.vinshare.specs.error.ApiResponseUnauthorized;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,10 +25,12 @@ import java.util.UUID;
 public interface Customer360ControllerSpecs {
 
     @Operation(summary = "Visão 360 do cliente")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<Customer360DTO>> get360(@PathVariable UUID customerId);
 
     @Operation(summary = "Linha do tempo de eventos do cliente")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<List<TimelineEventDTO>>> timeline(
             @PathVariable UUID customerId,

@@ -35,6 +35,7 @@ import java.util.UUID;
 public interface MeControllerSpecs {
 
     @Operation(summary = "Dados do usuário autenticado")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<MeResponseDTO>> me();
 
     @Operation(summary = "Alterar a própria senha (exige a senha atual e encerra as demais sessões)")
@@ -45,6 +46,7 @@ public interface MeControllerSpecs {
     ResponseEntity<Void> changePassword(@Valid ChangePasswordRequestDTO request);
 
     @Operation(summary = "Exportar meus dados pessoais (LGPD art. 18)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<PersonalDataExportDTO>> exportMyData();
 
     @Operation(summary = "Excluir minha conta (anonimização, LGPD art. 18, VI); exige a senha atual")
@@ -55,13 +57,16 @@ public interface MeControllerSpecs {
     ResponseEntity<Void> deleteMyAccount(@Valid DeleteAccountRequestDTO request);
 
     @Operation(summary = "Veículos do cliente autenticado")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<List<VehicleResponseDTO>>> myVehicles();
 
     @Operation(summary = "Histórico de serviços do cliente autenticado, opcionalmente filtrado por veículo")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<Page<ServiceRecordResponseDTO>>> myServices(
             @RequestParam(required = false) UUID vehicleId, @ParameterObject Pageable pageable);
 
     @Operation(summary = "Agendamentos do cliente autenticado")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     ResponseEntity<ApiSingleResponse<Page<AppointmentResponseDTO>>> myAppointments(
             @RequestParam(required = false) AppointmentStatus status, @ParameterObject Pageable pageable);
 

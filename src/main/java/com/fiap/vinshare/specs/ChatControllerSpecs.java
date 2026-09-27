@@ -39,6 +39,7 @@ public interface ChatControllerSpecs {
             @Valid @RequestBody SendMessageRequestDTO request);
 
     @Operation(summary = "Histórico de mensagens da sessão")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<List<ChatMessageResponseDTO>>> listMessages(@PathVariable UUID sessionId);
 }

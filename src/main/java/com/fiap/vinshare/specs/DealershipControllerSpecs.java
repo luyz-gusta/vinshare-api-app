@@ -8,6 +8,7 @@ import com.fiap.vinshare.specs.error.ApiResponseInternalServerError;
 import com.fiap.vinshare.specs.error.ApiResponseNotFound;
 import com.fiap.vinshare.specs.error.ApiResponseUnauthorized;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public interface DealershipControllerSpecs {
 
     @Operation(summary = "Buscar concessionárias próximas (Haversine)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseBadRequest
     ResponseEntity<ApiSingleResponse<List<DealershipResponseDTO>>> nearby(
             @Parameter(description = "Latitude do usuário") @RequestParam BigDecimal lat,
@@ -33,10 +35,12 @@ public interface DealershipControllerSpecs {
             @Parameter(description = "Filtro opcional por tipo de serviço") @RequestParam(required = false) String service);
 
     @Operation(summary = "Detalhe da concessionária")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<DealershipResponseDTO>> findById(@PathVariable UUID id);
 
     @Operation(summary = "Slots de disponibilidade para agendamento")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<DealershipAvailabilityResponseDTO>> availability(
             @PathVariable UUID id,

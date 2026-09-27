@@ -42,6 +42,24 @@ class OpenApiContractTest extends IntegrationTest {
     }
 
     @Test
+    void todaOperacaoDocumentaARespostaDeSucessoComOModelo() throws Exception {
+        List<String> semSucesso = new ArrayList<>();
+        for (var path : apiDocs().get("paths").properties()) {
+            for (var op : path.getValue().properties()) {
+                if (!List.of("get", "post", "put", "patch", "delete").contains(op.getKey())) continue;
+                JsonNode responses = op.getValue().get("responses");
+                List<String> codes = new ArrayList<>();
+                responses.fieldNames().forEachRemaining(c -> { if (c.startsWith("2")) codes.add(c); });
+                // 204 não tem corpo; qualquer outro 2xx precisa mostrar o modelo da resposta.
+                boolean documentada = !codes.isEmpty() && codes.stream()
+                        .allMatch(c -> c.equals("204") || responses.get(c).has("content"));
+                if (!documentada) semSucesso.add(op.getKey().toUpperCase() + " " + path.getKey());
+            }
+        }
+        assertThat(semSucesso).isEmpty();
+    }
+
+    @Test
     void paginacaoApareceComoParametrosSimples() throws Exception {
         List<String> names = new ArrayList<>();
         apiDocs().at("/paths/~1leads/get/parameters").forEach(p -> names.add(p.get("name").asText()));

@@ -37,20 +37,24 @@ public interface AppointmentControllerSpecs {
             @Valid @RequestBody CreateAppointmentRequestDTO request);
 
     @Operation(summary = "Detalhe de um agendamento")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> findOne(@PathVariable UUID id);
 
     @Operation(summary = "Cancelar agendamento (cliente)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     @ApiResponseConflict
     ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> cancel(@PathVariable UUID id);
 
     @Operation(summary = "Check-in (analista da concessionária)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseNotFound
     @ApiResponseConflict
     ResponseEntity<ApiSingleResponse<AppointmentResponseDTO>> checkIn(@PathVariable UUID id);
 
     @Operation(summary = "Concluir agendamento e registrar serviço (analista da concessionária)")
+    @ApiResponse(responseCode = "200", description = "Sucesso")
     @ApiResponseBadRequest
     @ApiResponseNotFound
     @ApiResponseConflict
