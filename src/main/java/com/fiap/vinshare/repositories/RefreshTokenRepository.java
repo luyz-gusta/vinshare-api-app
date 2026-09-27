@@ -20,4 +20,13 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Modifying
     @Query("UPDATE RefreshToken r SET r.revokedAt = :now WHERE r.user = :user AND r.revokedAt IS NULL")
     void revokeAllForUser(@Param("user") User user, @Param("now") OffsetDateTime now);
+
+    /**
+     * Encerra todas as sessões do usuário apagando os refresh tokens. Apagar (e não
+     * revogar) evita que a detecção de reuso trate como roubo um token encerrado
+     * por troca de senha ou anonimização.
+     */
+    @Modifying
+    @Query("DELETE FROM RefreshToken r WHERE r.user = :user")
+    int deleteAllByUser(@Param("user") User user);
 }

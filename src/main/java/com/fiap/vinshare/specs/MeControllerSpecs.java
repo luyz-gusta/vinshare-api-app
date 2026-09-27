@@ -1,5 +1,8 @@
 package com.fiap.vinshare.specs;
 
+import com.fiap.vinshare.specs.error.ApiResponseTooManyRequests;
+import com.fiap.vinshare.specs.error.ApiResponseUnprocessableEntity;
+import com.fiap.vinshare.specs.error.ApiResponseBadRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import com.fiap.vinshare.domain.dto.appointment.AppointmentResponseDTO;
@@ -32,7 +35,11 @@ public interface MeControllerSpecs {
     @Operation(summary = "Dados do usuário autenticado")
     ResponseEntity<ApiSingleResponse<MeResponseDTO>> me();
 
-    @Operation(summary = "Altera a senha do usuário autenticado, exigindo a senha atual")
+    @Operation(summary = "Alterar a própria senha (exige a senha atual e encerra as demais sessões)")
+    @ApiResponse(responseCode = "204", description = "Senha alterada; refresh tokens do usuário encerrados")
+    @ApiResponseBadRequest
+    @ApiResponseUnprocessableEntity
+    @ApiResponseTooManyRequests
     ResponseEntity<Void> changePassword(@Valid ChangePasswordRequestDTO request);
 
     @Operation(summary = "Veículos do cliente autenticado")

@@ -42,6 +42,7 @@ public class AuditService {
     public static final String CONFIG_CHANGED = "CONFIG_CHANGED";
     public static final String NOTIFICATION_SENT = "NOTIFICATION_SENT";
     public static final String TOKEN_REUSE_DETECTED = "TOKEN_REUSE_DETECTED";
+    public static final String PASSWORD_CHANGED = "PASSWORD_CHANGED";
 
     private final AuditLogRepository auditLogRepository;
     private final ClientIpResolver clientIpResolver;
