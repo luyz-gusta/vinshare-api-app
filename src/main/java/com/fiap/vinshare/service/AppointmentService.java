@@ -73,7 +73,8 @@ public class AppointmentService {
             throw new BusinessValidationException("Não é possível agendar em uma data passada");
         }
         if (appointmentRepository.existsActiveConflict(
-                dealership.getId(), req.scheduledAt(), AppointmentStatus.SCHEDULED, AppointmentStatus.CHECKED_IN)) {
+                dealership.getId(), req.scheduledAt(),
+                AppointmentStatus.SCHEDULED.name(), AppointmentStatus.CHECKED_IN.name())) {
             throw new BusinessRuleException("Já existe um agendamento neste horário para essa concessionária");
         }
 
@@ -101,8 +102,8 @@ public class AppointmentService {
         Customer customer = requireCustomer(user);
         Page<Appointment> page = (status == null)
                 ? appointmentRepository.findAllByCustomerIdOrderByScheduledAtDesc(customer.getId(), pageable)
-                : appointmentRepository.findAllByCustomerIdAndStatusOrderByScheduledAtDesc(
-                customer.getId(), status, pageable);
+                : appointmentRepository.findAllByCustomerIdAndStatus(
+                customer.getId(), status.name(), pageable);
         return page.map(this::toDTO);
     }
 
