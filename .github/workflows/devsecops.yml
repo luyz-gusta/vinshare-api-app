@@ -68,7 +68,7 @@ jobs:
         run: ./mvnw -B -ntp verify
       - name: Relatório de testes
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         with:
           name: Testes JUnit
           path: target/surefire-reports/TEST-*.xml
