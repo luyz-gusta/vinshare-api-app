@@ -12,7 +12,7 @@ jobs:
   zap:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: ZAP baseline (somente regras passivas)
         uses: zaproxy/action-baseline@v0.14.0
         with:
