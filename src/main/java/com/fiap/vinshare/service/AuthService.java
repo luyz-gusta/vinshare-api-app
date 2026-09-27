@@ -78,7 +78,7 @@ public class AuthService {
                 .cpfLookupHash(cpfLookup)
                 .phone(request.phone())
                 .birthDate(request.birthDate())
-                .lgpdConsentAt(request.lgpdConsent() ? OffsetDateTime.now() : null)
+                .lgpdConsentAt(OffsetDateTime.now())
                 .build();
         customerRepository.save(customer);
 

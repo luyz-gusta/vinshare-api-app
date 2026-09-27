@@ -191,4 +191,24 @@ class AuthFlowTest extends IntegrationTest {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"));
     }
+
+    @Test
+    void cadastroSemConsentimentoLgpdRetorna400() throws Exception {
+        String body = """
+                {"fullName":"Sem Consentimento","email":"%s","password":"%s",
+                 "cpf":"%s","lgpdConsent":false}
+                """.formatted(TestData.uniqueEmail("sem"), TestFixtures.PASSWORD, TestData.randomCpf());
+        var result = mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        assertThat(json(result).get("errors").toString()).contains("lgpdConsent");
+    }
+
+    @Test
+    void cadastroComCpfComDigitoVerificadorInvalidoRetorna400() throws Exception {
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody(TestData.uniqueEmail("cpf"), "12345678900")))
+                .andExpect(status().isBadRequest());
+    }
 }
