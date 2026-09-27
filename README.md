@@ -184,7 +184,7 @@ As migrations ficam em `src/main/resources/db/migration/` (`V1` a `V4`). A próx
 ## Segurança (resumo)
 
 - **Tokens:** JWT HS512 de 15 min com `iss`, `aud` e `jti`. O papel é recarregado do banco a cada requisição. Refresh token opaco de 7 dias, de uso único (rotação com lock), com detecção de reuso e tolerância de 30 s para renovações simultâneas do app.
-- **Senhas e força bruta:** BCrypt custo 12. Rate limit por IP real (login, cadastro, refresh, chat e geral), mais bloqueio por e-mail após 5 falhas em 10 min, válido também para a troca de senha.
+- **Senhas e força bruta:** BCrypt custo 12. Rate limit por IP real (login e cadastro 10/min, refresh 60/min, chat 20/min, geral 120/min), mais bloqueio por e-mail após 5 falhas em 10 min, válido também para a troca de senha.
 - **Troca de senha:** `PATCH /me/password` exige a senha atual e encerra todas as sessões (refresh tokens). O app pede novo login quando o access token atual expira, em até 15 min.
 - **Autorização:** RBAC `CLIENT` / `ANALYST` / `ADMIN`, com escopo por dono e por concessionária (404 fora do escopo).
 - **Dados pessoais:** CPF cifrado com AES-256-GCM e busca por HMAC-SHA256. Segredos obrigatórios, sem valor padrão. Dados pessoais removidos antes de chegar à IA.

@@ -12,10 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Contexto próprio com limite baixo de login (3/min) para exercitar o 429. */
+/** Contexto próprio com limites baixos (login 3/min, refresh 6/min) para exercitar o 429. */
 @TestPropertySource(properties = {
         "security.rate-limit.login-capacity=3",
         "security.rate-limit.login-refill-tokens=3",
+        "security.rate-limit.refresh-capacity=6",
+        "security.rate-limit.refresh-refill-tokens=6",
         "security.client-ip.trusted-proxy-hops=0"
 })
 class RateLimitTest extends IntegrationTest {
@@ -45,6 +47,20 @@ class RateLimitTest extends IntegrationTest {
     void xForwardedForForjadoNaoBurlaOLimite() throws Exception {
         for (int i = 0; i < 3; i++) loginFrom("10.2.2.2", "9.9.9." + i).andExpect(status().isUnauthorized());
         loginFrom("10.2.2.2", "9.9.9.200").andExpect(status().isTooManyRequests());
+    }
+
+    private ResultActions refreshFrom(String ip) throws Exception {
+        return mockMvc.perform(post("/auth/refresh")
+                .with(req -> { req.setRemoteAddr(ip); return req; })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"token-inexistente\"}"));
+    }
+
+    @Test
+    void refreshTemLimiteProprioMaiorQueOLogin() throws Exception {
+        // Vários aparelhos atrás do mesmo IP (Wi-Fi da sala) renovam a sessão sem cair no limite do login.
+        for (int i = 0; i < 6; i++) refreshFrom("10.5.5.5").andExpect(status().isUnauthorized());
+        refreshFrom("10.5.5.5").andExpect(status().isTooManyRequests());
     }
 
     @Test

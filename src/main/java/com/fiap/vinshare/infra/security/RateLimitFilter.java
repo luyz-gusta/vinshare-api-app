@@ -48,6 +48,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private int loginRefillTokens;
     @Value("${security.rate-limit.login-refill-minutes}")
     private int loginRefillMinutes;
+    // Refresh tem balde próprio: vários aparelhos atrás do mesmo IP (Wi-Fi, NAT) renovam a sessão
+    // sem disputar o limite do login. O token de 384 bits não é adivinhável, então o limite só contém abuso.
+    @Value("${security.rate-limit.refresh-capacity:60}")
+    private int refreshCapacity;
+    @Value("${security.rate-limit.refresh-refill-tokens:60}")
+    private int refreshRefillTokens;
+    @Value("${security.rate-limit.refresh-refill-minutes:1}")
+    private int refreshRefillMinutes;
     @Value("${security.rate-limit.chat-capacity}")
     private int chatCapacity;
     @Value("${security.rate-limit.chat-refill-tokens}")
@@ -94,7 +102,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private Bucket newBucket(String scope) {
         Bandwidth limit = switch (scope) {
-            case "login", "register", "refresh" -> bandwidth(loginCapacity, loginRefillTokens, loginRefillMinutes);
+            case "login", "register" -> bandwidth(loginCapacity, loginRefillTokens, loginRefillMinutes);
+            case "refresh" -> bandwidth(refreshCapacity, refreshRefillTokens, refreshRefillMinutes);
             case "chat" -> bandwidth(chatCapacity, chatRefillTokens, chatRefillMinutes);
             default -> bandwidth(defaultCapacity, defaultRefillTokens, defaultRefillMinutes);
         };
