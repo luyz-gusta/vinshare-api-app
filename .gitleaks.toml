@@ -4,7 +4,9 @@ title = "vinshare-api - configuração do Gitleaks"
 useDefault = true
 
 [allowlist]
-description = "Chaves exclusivas de teste (usadas só com Testcontainers, nunca em produção)"
+description = "Chaves e senhas fictícias usadas só nos testes (Testcontainers), nunca em produção"
 paths = [
   '''src/test/resources/application-test\.properties''',
+  '''src/test/java/com/fiap/vinshare/infra/security/CryptoServiceTest\.java''',
+  '''src/test/java/com/fiap/vinshare/ChangePasswordTest\.java''',
 ]

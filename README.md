@@ -28,7 +28,7 @@ API REST do **Ford VIN Share** (Challenge FIAP 2026). Aumenta a retenção de cl
 
 Hospedagem: Azure App Service (Linux, Java 21, East US).
 
-O pipeline tem o job `deploy` (GitHub Actions → OIDC → App Service, com aprovação manual e smoke test). Ele só passa a publicar depois da configuração da identidade OIDC no Azure; até lá o deploy continua manual, com `./mvnw azure-webapp:deploy`.
+O pipeline tem o job `deploy` (GitHub Actions → OIDC → App Service, com aprovação manual e smoke test). Ele só roda depois que a equipe configurar a identidade OIDC no Azure e criar a variável de repositório `AZURE_DEPLOY_ENABLED=true` (até lá aparece como *skipped*). Enquanto isso, o deploy continua manual, com `./mvnw azure-webapp:deploy`.
 
 **Contas de demonstração:**
 - `owner@ford.com` (ADMIN);
@@ -136,7 +136,7 @@ A imagem roda com usuário sem privilégio (uid 10001), só com o JRE e com heal
 | `sca` | Trivy sobre o SBOM | CVE CRITICAL/HIGH com correção disponível |
 | `container` | Hadolint + Trivy da imagem | Dockerfile fora do padrão ou CVE CRITICAL/HIGH na imagem |
 | `iac-scan` | Checkov (Bicep, Dockerfile, Actions) | Configuração insegura |
-| `deploy` | azure/login (OIDC) + webapps-deploy + smoke test | Aprovação negada ou health diferente de UP |
+| `deploy` | azure/login (OIDC) + webapps-deploy + smoke test (só com `AZURE_DEPLOY_ENABLED=true`) | Aprovação negada ou health diferente de UP |
 
 Além disso:
 - Dependabot semanal (Maven e Actions);
