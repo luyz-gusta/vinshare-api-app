@@ -1,5 +1,8 @@
 package com.fiap.vinshare.service;
 
+import java.util.Collections;
+import org.springframework.transaction.support.TransactionTemplate;
+import com.fiap.vinshare.infra.security.PiiRedactor;
 import com.fiap.vinshare.domain.dto.chat.ChatMessageResponseDTO;
 import com.fiap.vinshare.domain.dto.chat.ChatSessionResponseDTO;
 import com.fiap.vinshare.domain.dto.chat.SendMessageRequestDTO;
@@ -50,6 +53,10 @@ public class ChatService {
     private final WarrantyRepository warrantyRepository;
     private final AiChatClient aiChatClient;
     private final InputSanitizer sanitizer;
+    private final TransactionTemplate transactionTemplate;
+    private final PiiRedactor piiRedactor;
+
+    private record PromptContext(UUID sessionId, String systemPrompt, List<Map<String, String>> history) {}
 
     @Transactional
     public ChatSessionResponseDTO openSession(User user) {
@@ -61,40 +68,47 @@ public class ChatService {
                 .build();
     }
 
-    @Transactional
+    /**
+     * A chamada à IA acontece FORA de transação: segurar uma conexão do pool
+     * durante uma chamada HTTP externa esgota o pool quando a IA fica lenta.
+     */
     public ChatMessageResponseDTO sendMessage(UUID sessionId, SendMessageRequestDTO req, User user) {
+        PromptContext ctx = transactionTemplate.execute(status -> prepare(sessionId, req, user));
+        log.debug("Chat: chamando IA para sessão {} (histórico de {} mensagens)",
+                ctx.sessionId(), ctx.history().size());
+        String reply = aiChatClient.complete(ctx.systemPrompt(), ctx.history());
+        return transactionTemplate.execute(status -> saveReply(ctx.sessionId(), reply));
+    }
+
+    private PromptContext prepare(UUID sessionId, SendMessageRequestDTO req, User user) {
         ChatSession session = sessionRepository.findByIdAndUserId(sessionId, user.getId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Sessão de chat", sessionId));
-
-        ChatMessage userMessage = ChatMessage.builder()
+        messageRepository.save(ChatMessage.builder()
                 .session(session)
                 .role(ChatMessageRole.USER)
                 .content(sanitizer.sanitize(req.message()))
-                .build();
-        messageRepository.save(userMessage);
+                .build());
 
-        List<Map<String, String>> history = messageRepository
-                .findAllBySessionIdOrderByCreatedAtAsc(session.getId()).stream()
+        // Só as últimas mensagens e sem dados pessoais: o texto vai para um provedor externo.
+        List<ChatMessage> recent = new ArrayList<>(
+                messageRepository.findTop20BySessionIdOrderByCreatedAtDesc(session.getId()));
+        Collections.reverse(recent);
+        List<Map<String, String>> history = recent.stream()
                 .map(m -> Map.of(
                         "role", m.getRole() == ChatMessageRole.ASSISTANT ? "assistant" : "user",
-                        "content", m.getContent()))
+                        "content", piiRedactor.redact(m.getContent())))
                 .toList();
+        return new PromptContext(session.getId(), SYSTEM_PROMPT + buildPseudonimizedContext(user), history);
+    }
 
-        String systemWithContext = SYSTEM_PROMPT + buildPseudonimizedContext(user);
-        log.debug("Chat: chamando IA para sessão {} (histórico de {} mensagens)",
-                session.getId(), history.size());
-
-        String reply = aiChatClient.complete(systemWithContext, history);
+    private ChatMessageResponseDTO saveReply(UUID sessionId, String reply) {
         List<SuggestedActionDTO> actions = inferActions(reply);
-
-        ChatMessage assistantMessage = ChatMessage.builder()
-                .session(session)
+        ChatMessage assistantMessage = messageRepository.save(ChatMessage.builder()
+                .session(sessionRepository.getReferenceById(sessionId))
                 .role(ChatMessageRole.ASSISTANT)
                 .content(reply)
                 .suggestedActions(actions.stream().map(this::actionToMap).toList())
-                .build();
-        messageRepository.save(assistantMessage);
-
+                .build());
         return toDTO(assistantMessage);
     }
 

@@ -16,6 +16,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
 
     List<ChatMessage> findAllBySessionIdOrderByCreatedAtAsc(UUID sessionId);
 
+    List<ChatMessage> findTop20BySessionIdOrderByCreatedAtDesc(UUID sessionId);
+
     /** Remove mensagens anteriores à data de corte (política de retenção, Cyber frente 4). */
     @Modifying
     @Query("delete from ChatMessage m where m.createdAt < :cutoff")

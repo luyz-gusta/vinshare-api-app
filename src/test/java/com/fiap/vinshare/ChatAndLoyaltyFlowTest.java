@@ -45,4 +45,24 @@ class ChatAndLoyaltyFlowTest extends IntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.newBalance").value(400));
     }
+
+    @Test
+    void mensagemComDadosPessoaisNaoChegaAoProvedorDeIa() throws Exception {
+        String token = fixtures.tokenFor(fixtures.customer().getUser());
+        String sessionId = json(mockMvc.perform(post("/chat/sessions").header("Authorization", bearer(token)))
+                .andExpect(status().isCreated()).andReturn()).at("/data/sessionId").asText();
+
+        MvcResult result = mockMvc.perform(post("/chat/sessions/" + sessionId + "/messages")
+                        .header("Authorization", bearer(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"Meu CPF é 123.456.789-09 e meu e-mail é joao.silva@email.com\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String reply = json(result).at("/data/content").asText();
+        assertThat(reply)
+                .doesNotContain("123.456.789-09")
+                .doesNotContain("joao.silva@email.com")
+                .contains("[CPF removido]");
+    }
 }

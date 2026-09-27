@@ -1,5 +1,7 @@
 package com.fiap.vinshare.service;
 
+import java.time.Duration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,9 +26,14 @@ public class ExpoPushClient {
     private static final String PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
     private final String accessToken;
+    private final RestClient restClient;
 
     public ExpoPushClient(@Value("${integrations.expo.access-token:}") String accessToken) {
         this.accessToken = accessToken;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(10));
+        this.restClient = RestClient.builder().requestFactory(factory).build();
     }
 
     public boolean isEnabled() {
@@ -56,7 +63,7 @@ public class ExpoPushClient {
         }
 
         try {
-            RestClient.create().post()
+            restClient.post()
                     .uri(PUSH_URL)
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)

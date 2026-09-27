@@ -1,5 +1,7 @@
 package com.fiap.vinshare.service;
 
+import java.time.Duration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import com.fiap.vinshare.infra.security.AiChatProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,12 @@ public class AiChatClient {
     private final AiChatProperties props;
 
     private RestClient client() {
+        // Sem timeout, uma IA lenta prende a thread da requisição indefinidamente.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(props.getTimeoutSeconds()));
         return RestClient.builder()
+                .requestFactory(factory)
                 .baseUrl(props.getBaseUrl())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("x-goog-api-key", props.getApiKey() == null ? "" : props.getApiKey())

@@ -26,6 +26,9 @@ public class AiChatProperties {
     @Value("${integrations.gemini.base-url:https://generativelanguage.googleapis.com}")
     private String baseUrl;
 
+    @Value("${integrations.gemini.timeout-seconds:20}")
+    private int timeoutSeconds;
+
     public boolean isEnabled() {
         return apiKey != null && !apiKey.isBlank();
     }
