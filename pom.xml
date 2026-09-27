@@ -180,6 +180,38 @@
                 </configuration>
             </plugin>
 
+            <!-- Cobertura de testes (relatório em target/site/jacoco) -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              SBOM CycloneDX com a configuração do spring-boot-starter-parent:
+              gera target/classes/META-INF/sbom/application.cdx.json (consumido
+              pelo Trivy no pipeline e embutido no JAR).
+            -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+            </plugin>
+
             <!-- Deploy para Azure App Service (mvn azure-webapp:deploy) -->
             <plugin>
                 <groupId>com.microsoft.azure</groupId>
