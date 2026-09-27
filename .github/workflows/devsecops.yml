@@ -130,3 +130,38 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           format: table
+
+  deploy:
+    name: Deploy (Azure App Service)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [secret-scan, sast, build-test, sca]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://vinshare-api.azurewebsites.net/api/v1/docs
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: vinshare-api
+          package: vinshare-api-0.0.1-SNAPSHOT.jar
+      - name: Smoke test (health)
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS https://vinshare-api.azurewebsites.net/api/v1/actuator/health | grep -q '"UP"'; then
+              echo "API saudável"; exit 0
+            fi
+            sleep 10
+          done
+          echo "A API não respondeu UP em 5 minutos" >&2
+          exit 1
